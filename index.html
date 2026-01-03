@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexun</title>
+    <script src="https://unpkg.com/compromise"></script>
+    <style>
+        /* --- Steel Azure Color System --- */
+        :root {
+            --sa-50:  #e7f2fe;
+            --sa-100: #cfe5fc;
+            --sa-200: #9fccf9;
+            --sa-300: #6eb2f7;
+            --sa-400: #3e99f4;
+            --sa-500: #0e7ff1;
+            --sa-600: #0b66c1;
+            --sa-700: #084c91;
+            --sa-800: #063360;
+            --sa-900: #031930;
+            --sa-950: #021222;
+
+            --c-accent: var(--sa-500);
+            --c-bg-sidebar: #ffffff;
+            --c-bg-tab-bar: #f1f5f9;
+            --c-text: var(--sa-950);
+            
+            --font-ui: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            --font-read: 'Cambria', 'Georgia', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
+
+        body {
+            height: 100vh;
+            overflow: hidden;
+            font-family: var(--font-ui);
+            background: white;
+            color: var(--c-text);
+            display: flex;
+            flex-direction: column;
+        }
+
+/* --- App Bar --- */
+        .nav-app-bar {
+            /* 基础高度 */
+            height: 48px; 
+            background: transparent; /* 背景色改由子元素控制，以便覆盖边框 */
+            box-shadow: 0 2px 8px rgba(8, 76, 145, 0.3);
+            border-bottom: none !important;
+            display: flex; 
+            align-items: flex-end; /* 强制内容底端对齐 */
+            /* 关键修复：让背景向右延伸 1px，覆盖住侧边栏的边框缝隙 */
+            width: 100%;
+            margin-right: -1px;
+            
+            padding: 0 24px; /* 两侧留白 */
+            color: white; user-select: none; flex-shrink: 0;
+            z-index: 10;
+            transition: height 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            position: relative;
+            overflow: visible; /* 允许背景延伸 */
+        }
+        
+        /* 独立的蓝色背景层，确保完全铺满且无缝隙 */
+        .app-bar-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--sa-700);
+            box-shadow: 0 2px 8px rgba(8, 76, 145, 0.3);
+            z-index: -1;
+            border-bottom: none !important;
+        }
+
+        /* 展开状态高度 */
+        .nav-app-bar.expanded { height: 87px; }
+
+        /* --- Logo 容器布局 --- */
+        .brand-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            /* 核心：强制底部对齐，解决你说的Logo悬空问题 */
+            align-items: flex-end; 
+            
+            /* 动画参数：贝塞尔曲线控制平滑度 */
+            transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1),
+                        padding 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            
+            /* 【可调参数 1】：收起状态时的位移
+               正数向右，负数向左。增加这个值可以让Logo在收起时更靠右。
+               当前设置 65px 是为了配合 sidebar 280px 的宽度居中。
+            */
+            transform: translateX(0px)translateY(0.3px);
+            
+            /* 底部留白：设为 0 即为紧贴底部 */
+            padding-bottom: 0px; 
+        }
+
+        /* 展开时的容器状态 */
+        .nav-app-bar.expanded .brand-wrapper {
+            transform: translateX(0)translateY(0.7px); /* 回归左侧 */
+        }
+
+        /* 图标样式 */
+        .svg-icon {
+            /* 【可调参数 2】：收起时图标大小 
+            */
+            height: 35px; 
+            width: auto;
+            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            /* 允许动画时箭头短暂溢出容器，防止截断 */
+            overflow: visible; 
+            flex-shrink: 0;
+        }
+        
+        /* 展开时图标变大 */
+        .nav-app-bar.expanded .svg-icon { 
+            height: 70px; 
+        }
+
+        /* 文字容器 */
+        .text-container {
+            display: flex;
+            align-items: flex-end;
+            /* 【可调参数 3】：收起时文字与箭头的间距
+               值越小，收起时两者靠得越近
+            */
+            margin-left: 12px; 
+            
+            /* 【可调参数 4】：文字底部的微调
+               如果觉得文字比箭头低，可以增加这个 padding-bottom
+            */
+            padding-bottom: 10px; 
+            
+            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            opacity: 1; /* 始终显示，只是位置变化 */
+        }
+
+        /* 展开时文字位置 */
+        .nav-app-bar.expanded .text-container {
+            /* 【可调参数 5】：展开时文字向右推的距离
+            */
+            margin-left: 70px; 
+        }
+
+        /* 文字 SVG 大小 */
+        .svg-text {
+            height: 14px; /* 收起时文字大小 */
+            width: auto;
+            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        
+        .nav-app-bar.expanded .svg-text { 
+            height: 20px; /* 展开时文字变大 */
+        }
+
+        /* 动画定义：从右侧飞入 */
+        @keyframes arrowFlyInFromRight {
+            0% {
+                transform: translateX(50px); 
+                opacity: 0; 
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1; 
+            }
+        }
+
+        .svg-icon.running .arrow {
+            /* 动画时间 */
+            animation: arrowFlyInFromRight 0.5s cubic-bezier(0.25, 1, 0.5, 1) backwards;
+        }
+
+        /* 依次延迟 */
+        .svg-icon.running .arrow.a1 { animation-delay: 0ms; }
+        .svg-icon.running .arrow.a2 { animation-delay: 100ms; }
+        .svg-icon.running .arrow.a3 { animation-delay: 200ms; }
+
+        /* --- Notification System --- */
+        #toast-container {
+            position: fixed; top: 20px; right: 0;
+            width: auto; display: flex; flex-direction: column;
+            z-index: 2147483647; pointer-events: none; padding-right: 0;
+            align-items: flex-end; 
+        }
+
+        .toast-item {
+            background: var(--sa-900); color: white;
+            padding: 15px 25px 15px 20px;
+            font-size: 14px; font-weight: 500;
+            display: flex; align-items: center; gap: 12px;
+            width: 320px; min-width: 320px;
+            margin-bottom: 10px; max-height: 100px; opacity: 0; transform: translateX(100%);
+            border-left: 6px solid var(--c-accent);
+            box-shadow: -4px 6px 15px rgba(2, 18, 34, 0.25);
+            pointer-events: auto; cursor: default; overflow: hidden;
+            user-select: none; -webkit-user-select: none;
+            transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.3s ease, max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.15s, margin-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.15s, padding 0.3s ease 0.15s;
+        }
+        .toast-item.show { transform: translateX(0); opacity: 1; }
+        .toast-item.hiding { transform: translateX(100%); opacity: 0; max-height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; border: none; }
+        .toast-item.success { border-left-color: #2ecc71; }
+        .toast-item.warn { border-left-color: #f1c40f; }
+        .toast-item.error { border-left-color: #e74c3c; }
+
+        /* --- Layout --- */
+        .layout { flex: 1; display: flex; overflow: hidden; }
+        .nav-pane { width: 280px; background: var(--c-bg-sidebar); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+        .nav-scroll-content { flex: 1; overflow-y: auto; padding-top: 20px; padding-bottom: 10px; border-right: 1px solid var(--sa-200);}
+        .nav-header { padding: 0 20px 10px; font-size: 12px; font-weight: 700; color: var(--sa-600); text-transform: uppercase; letter-spacing: 1px; user-select: none; }
+        
+        /* Sidebar Item (Standard) */
+        .nav-block { 
+            padding: 12px 20px; cursor: pointer; 
+            border-left: 4px solid transparent; 
+            transition: background-color 0.5s ease, border-color 0.2s ease, transform 0.1s;
+            user-select: none; -webkit-user-select: none; 
+        }
+        .nav-block:hover { background: var(--sa-50); }
+        .nav-block:active { 
+            background: var(--sa-100); 
+            transform: scale(0.98); 
+            transition: none;
+        } 
+        
+        .nav-block.danger .nav-row-main svg { stroke: #d32f2f; }
+        .nav-block.danger .nav-row-main span { color: #d32f2f; font-weight: 700; }
+        .nav-block.danger:hover { background: #fee2e2; }
+        .nav-block.danger:active { background: #fecaca; }
+        .nav-row-main { display: flex; align-items: center; gap: 15px; font-size: 15px; color: var(--sa-900); font-weight: 500; }
+        .nav-row-main svg { width: 20px; height: 20px; stroke: var(--sa-700); stroke-width: 2; }
+        .nav-row-sub { padding-left: 35px; font-size: 12px; color: var(--sa-600); margin-top: 4px; display: flex; align-items: center; }
+        .sub-name { flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: fit-content; }
+        .sub-info { flex-shrink: 0; white-space: nowrap; margin-left: 6px; }
+        
+        .action-block { 
+            margin: 20px; padding: 15px; background: var(--sa-600); color: white; text-align: center; font-size: 15px; font-weight: 600; cursor: pointer; border: none; box-shadow: 0 4px 6px rgba(11, 102, 193, 0.2); width: calc(100% - 40px); user-select: none; -webkit-user-select: none; 
+            transition: background 0.5s ease, transform 0.1s;
+        }
+        .action-block:hover { background: var(--sa-500); }
+        .action-block:active { transform: scale(0.98); background: var(--sa-700); transition: none; }
+        .action-block[disabled] { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .content-pane { flex: 1; display: flex; background: white; min-width: 0; overflow: hidden; min-height: 0; }
+        .editor-col { flex: 3; display: flex; flex-direction: column; border-right: 1px solid var(--sa-200); background: white; min-width: 0; overflow: hidden; }
+        .list-col { flex: 1; min-width: 250px; max-width: 350px; display: flex; flex-direction: column; background: #fff; }
+
+        /* --- Tab Bar (Optimized Animation) --- */
+        .tab-bar { 
+            display: flex; 
+            background: var(--c-bg-tab-bar); 
+            
+            /* 设定展开后的标准高度 */
+            height: 39px; 
+            min-height: 39px; 
+            
+            flex-shrink: 0; 
+            overflow-x: auto; 
+            overflow-y: hidden; 
+            white-space: nowrap; 
+            border-bottom: none; 
+            position: relative; 
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+            
+            /* 【关键修改】：
+               1. 时间改为 0.5s，与左侧 nav-app-bar 保持一致 
+               2. 增加 min-height 动画，确保 flex 容器内的内容被平滑推挤（即下移动画）
+               3. 缓动曲线贝塞尔值保持完全一致
+            */
+            transition: height 0.5s cubic-bezier(0.2, 1, 0.3, 1), 
+                        min-height 0.5s cubic-bezier(0.2, 1, 0.3, 1),
+                        opacity 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        
+        .tab-bar::-webkit-scrollbar { display: none; }
+
+        /* 隐藏状态：高度归零，触发下方的 view-head 和 editor 上移 */
+        .tab-bar.hidden { 
+            height: 0; 
+            min-height: 0; /* 关键：必须归零 min-height 才能让 flex 布局收缩 */
+            opacity: 0; 
+            pointer-events: none; 
+        }
+
+        @keyframes tabRise { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes tabExit { 0% { opacity: 1; transform: translateY(0); max-width: 200px; padding: 0 16px; border-right-width: 1px; } 100% { opacity: 0; transform: translateY(100%); max-width: 0; padding: 0; border-right-width: 0; margin: 0; } }
+        
+        .tab-item { display: inline-flex; align-items: center; padding: 0 16px; height: 39px; border-top: 3px solid transparent; background: var(--c-bg-tab-bar); color: #666; font-size: 12px; font-weight: 600; cursor: pointer; border-right: 1px solid #e2e8f0; min-width: 120px; max-width: 200px; opacity: 1; transform: none; animation: tabRise 0.3s cubic-bezier(0.2, 1, 0.3, 1) forwards; transition: background 0.5s ease, color 0.2s ease, transform 0.1s; user-select: none; position: relative; }
+        .tab-item:hover { background: #e2e8f0; color: #333; }
+        .tab-item:active { transform: scale(0.96) !important; z-index: 10; transition: transform 0.05s; }
+        .tab-item.active { background: white; color: var(--sa-800); border-top: 3px solid var(--c-accent); opacity: 1; z-index: 5; }
+        .tab-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tab-close { width: 20px; opacity: 0; height: 100%; margin-left: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #888; font-weight: 400; transition: opacity 0.2s ease, color 0.1s; padding: 0 4px; line-height: 1; }
+        .tab-item:hover .tab-close { opacity: 1; }
+        .tab-close:hover { color: #e81123 !important; background: transparent !important; }
+        .tab-item.closing { animation: tabExit 0.3s cubic-bezier(0.2, 1, 0.3, 1) forwards !important; pointer-events: none; transition: none !important; z-index: 0; min-width: 0 !important; }
+
+        /* --- Header Switching --- */
+        .pane-head { height: 48px; background: white; border-bottom: 1px solid var(--sa-200); position: relative; overflow: hidden; z-index: 2; }
+        .pane-head.static { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 13px; font-weight: 700; color: var(--sa-700); user-select: none; }
+        .pane-head.dynamic { display: block; padding: 0; font-size: 13px; font-weight: 700; color: var(--sa-700); user-select: none; }
+        .header-row { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: white; transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease; font-size: inherit; font-weight: inherit; color: inherit; }
+        .header-title-bar { transform: translateY(0); opacity: 1; pointer-events: auto; z-index: 10; }
+        .header-input-bar { transform: translateY(100%); opacity: 0; pointer-events: none; z-index: 5; }
+        .pane-head.mode-input .header-title-bar { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+        .pane-head.mode-input .header-input-bar { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .view-header { color: var(--sa-800); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; margin-right: 15px; }
+        .head-actions { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
+        .word-stats { font-weight: 400; color: var(--sa-600); font-size: 12px; background: var(--sa-50); padding: 4px 10px; white-space: nowrap; }
+
+        /* --- Editor & Wrapper --- */
+        .editor-wrapper { flex: 1; height: 0; position: relative; display: flex; flex-direction: column; }
+        .editor { flex: 1; padding: 40px 60px; overflow-y: auto; font-family: var(--font-read); font-size: 19px; line-height: 2.1; text-align: justify; outline: none; white-space: pre-wrap; color: #222; background: white; user-select: none; -webkit-user-select: none; cursor: default; }
+        .editor-wrapper.editing-mode .editor { user-select: text; -webkit-user-select: text; cursor: text; }
+        .editor-wrapper::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--sa-400); pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 20; box-shadow: inset 0 0 10px rgba(14, 127, 241, 0.1); }
+        .editor-wrapper.editing-mode::after { opacity: 1; }
+
+        /* --- Unified Scrollbar Styles --- */
+        .editor::-webkit-scrollbar, .list-body::-webkit-scrollbar, .nav-scroll-content::-webkit-scrollbar, .syn-popup::-webkit-scrollbar { width: 10px; height: 10px; background: white; }
+        .editor::-webkit-scrollbar-thumb, .list-body::-webkit-scrollbar-thumb, .nav-scroll-content::-webkit-scrollbar-thumb, .syn-popup::-webkit-scrollbar-thumb { background: #cbd5e1; border: 2px solid white; border-radius: 0; }
+        .editor::-webkit-scrollbar-thumb:hover, .list-body::-webkit-scrollbar-thumb:hover, .nav-scroll-content::-webkit-scrollbar-thumb:hover, .syn-popup::-webkit-scrollbar-thumb:hover { background: var(--sa-400); }
+
+        /* --- Highlight & Animation --- */
+        @keyframes floatUp { from { opacity: 0; transform: translateY(15px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        
+        @keyframes wordPulseFocus {
+            0% { transform: scale(1.25); }
+            50% { transform: scale(1.10); } 
+            100% { transform: scale(1.25); }
+        }
+
+        .m-word { 
+            display: inline-block; vertical-align: baseline; 
+            background: var(--c-accent); color: white; 
+            font-weight: 700; cursor: pointer; 
+            padding: 2px 4px; margin: 0 1px; line-height: 1.2; 
+            border-radius: 0 !important; 
+            position: relative; opacity: 1; 
+            
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1), 
+                        background-color 0.2s, 
+                        color 0.2s, 
+                        box-shadow 0.4s ease; 
+        }
+        
+        .m-word.animate-in { animation: floatUp 0.6s cubic-bezier(0.2, 1, 0.3, 1) both; }
+        
+        .m-word.focus { 
+            background: white !important; 
+            color: var(--sa-700) !important; 
+            transform: scale(1.25); 
+            z-index: 9999; 
+            box-shadow: 0 0 0 3px var(--sa-600), 0 8px 24px rgba(14, 127, 241, 0.35); 
+        }
+        
+        .m-word.focus:hover { transform: scale(1.25); }
+
+        .m-word.focus:active {
+            transform: scale(1.10); 
+            transition: transform 0.05s ease-out; 
+        }
+
+        .m-word.focus.click-anim {
+            animation: wordPulseFocus 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .m-word:not(.focus):not(.removed):hover { background: var(--sa-600); color: white; transform: translateY(-2px) !important; box-shadow: 0 5px 12px rgba(11, 102, 193, 0.3); z-index: 10; }
+        .m-word.group { background: var(--sa-200); color: var(--sa-900); }
+        .m-word.group:hover { background: var(--sa-300); }
+        .m-word.removed { background: transparent !important; color: inherit !important; font-weight: inherit !important; padding: 0 !important; margin: 0 !important; animation: none !important; opacity: 1 !important; cursor: text; transform: none !important; box-shadow: none !important; border: none !important; text-decoration: none !important; pointer-events: auto !important; }
+        .m-word.removed:hover { cursor: context-menu; text-decoration: underline dotted var(--sa-400) !important; }
+
+        /* --- List & Click Feedback --- */
+        .list-body { flex: 1; overflow-y: auto; }
+        
+        /* [进场动画] */
+        @keyframes listEntry { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        /* [关键修正] forwards 改为保持状态，但在 JS 移除类后自然恢复 */
+        .l-item.list-entry-anim { opacity: 0; transform: translateX(-20px); animation: listEntry 0.4s cubic-bezier(0.2, 1, 0.3, 1) forwards; }
+
+        /* [JS 触发的点击动画] 复刻左侧物理手感 */
+        @keyframes pressDownUp {
+            0% { transform: scale(1); background-color: var(--sa-50); }
+            30% { transform: scale(0.98); background-color: var(--sa-100); }
+            100% { transform: scale(1); background-color: var(--sa-50); }
+        }
+
+        .l-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 12px 24px; 
+            border-bottom: 1px solid var(--sa-50); 
+            font-size: 14px; cursor: pointer; color: var(--sa-900); 
+            border-left: 4px solid transparent; 
+            
+            /* 基础状态：慢背景，快回弹 */
+            transition: background-color 0.5s ease, border-color 0.2s ease, transform 0.1s; 
+            
+            user-select: none; -webkit-user-select: none; 
+            opacity: 1; /* 默认不透明 */
+        }
+        
+        .l-item:hover { background: var(--sa-50); }
+        
+        /* 物理按下状态 */
+        .l-item:active {
+            transform: scale(0.98);
+            background-color: var(--sa-100);
+            transition: none; 
+        }
+
+        /* JS 强制按下状态 (用于覆盖复杂逻辑导致的卡顿) */
+        .l-item.press-anim {
+            animation: pressDownUp 0.2s ease-in-out; 
+        }
+
+        .l-item.active { 
+            background: var(--sa-50); 
+            color: var(--sa-700); 
+            font-weight: 600; 
+            border-left-color: var(--c-accent); 
+        }
+        .l-item.active:active { background: var(--sa-100); }
+
+        .l-item.removed-item { text-decoration: line-through; color: #94a3b8; }
+        .count-badge { background: #f1f5f9; color: var(--sa-600); padding: 2px 8px; font-size: 12px; font-weight: 600; min-width: 24px; text-align: center; }
+        .l-item.active .count-badge { background: white; color: var(--c-500); border: 1px solid var(--sa-200); }
+
+        /* Manual Add Animation */
+        .l-item.trigger-anim { animation: pressDownUp 0.4s ease; }
+
+        /* --- Toolbar --- */
+        .tool-group { display: flex; align-items: center; gap: 4px; }
+        .tool-btn { 
+            background: transparent; border: 1px solid transparent; color: var(--sa-600); 
+            padding: 6px 12px; border-radius: 0 !important; cursor: pointer; 
+            transition: background-color 0.5s ease, transform 0.1s; 
+            display: flex; align-items: center; gap: 6px; height: 32px; 
+            font-size: 12px; font-weight: 600; user-select: none; -webkit-user-select: none; 
+        }
+        .tool-btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; background: transparent !important; }
+        .tool-btn:hover { background: var(--sa-50); color: var(--sa-700); }
+        
+        .tool-btn:active { 
+            background: var(--sa-100); 
+            transform: scale(0.94); 
+            transition: none;
+        }
+
+        .tool-btn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.5; }
+        .seamless-input { flex: 1; border: none; outline: none; font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: var(--sa-900); background: transparent; height: 100%; }
+        .seamless-input::placeholder { color: #94a3b8; font-weight: 400; }
+
+        /* --- Context Menu --- */
+        .ctx-menu { position: fixed; background: white; border: 1px solid var(--sa-200); box-shadow: 0 4px 12px rgba(2, 18, 34, 0.1); z-index: 10001; min-width: 130px; opacity: 0; transform: scale(0.9); transform-origin: top left; pointer-events: none; user-select: none; -webkit-user-select: none; }
+        .ctx-menu.animate-in { animation: menuIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; pointer-events: auto; }
+        .ctx-menu.closing { animation: menuOut 0.15s ease-in forwards; pointer-events: none; }
+        @keyframes menuIn { from { opacity: 0; transform: scale(0.9) translateY(-5px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes menuOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+        .ctx-item { padding: 12px 20px; font-size: 13px; color: var(--sa-900); cursor: pointer; display: block; width: 100%; text-align: left; border: none; background: none; }
+        .ctx-item:hover { background: var(--sa-50); color: var(--sa-700); }
+
+        /* --- Synonym Popup --- */
+        .syn-popup {
+            position: fixed;
+            background: white;
+            border: 1px solid var(--sa-200);
+            box-shadow: 0 6px 16px rgba(11, 102, 193, 0.15);
+            z-index: 10002;
+            width: 300px;
+            overflow: hidden !important; 
+            opacity: 0;
+            transform: translateY(5px);
+            user-select: none;
+            padding: 12px;
+            pointer-events: none;
+            display: block; 
+            transition: 
+                top 0.25s cubic-bezier(0.2, 0, 0.2, 1), 
+                left 0.25s cubic-bezier(0.2, 0, 0.2, 1),
+                height 0.25s cubic-bezier(0.2, 0, 0.2, 1),
+                opacity 0.2s ease;
+            box-sizing: border-box;
+        }
+        .syn-popup.animate-in { animation: floatUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; pointer-events: auto; }
+        .syn-popup.closing { animation: menuOut 0.15s ease-in forwards; pointer-events: none; }
+        
+        .syn-header {
+            color: var(--sa-600); 
+            font-size: 12px;           /* 还原回 12px */
+            font-weight: 700; 
+            text-transform: uppercase; /* 还原：强制大写 */
+            letter-spacing: 1px;       /* 还原：宽间距 */
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 8px;
+        }
+        .syn-loading { font-size: 12px; color: var(--sa-600); padding: 5px 0 10px 0; text-align: left; }
+        
+        .syn-content { display: flex; flex-wrap: wrap; gap: 6px; }
+        .syn-tag, .trans-tag {
+            background: var(--sa-50); color: var(--sa-800); font-size: 13px; font-weight: 500;
+            padding: 4px 8px; cursor: default; border: 1px solid transparent;
+            transition: all 0.2s; border-radius: 0;
+        }
+        .syn-tag:hover, .trans-tag:hover { background: var(--sa-100); border-color: var(--sa-200); color: var(--sa-900); }
+        .syn-empty { font-size: 12px; color: #94a3b8; font-style: italic; padding: 5px 0; }
+
+        .anim-wrapper { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        .view-old, .view-new { 
+            position: absolute; 
+            top: 0; left: 0; width: 100%; padding: 0; 
+            box-sizing: border-box; white-space: normal;
+        }
+
+        .trans-grid { display: grid; grid-template-columns: min-content 1fr; gap: 6px 10px; align-items: baseline; }
+        .trans-tag { text-align: center; font-size: 12px; font-weight: 700; padding: 2px 6px; white-space: nowrap; }
+        .trans-text { font-size: 13px; color: var(--sa-900); line-height: 1.4; }
+        .phonetic-row { display: flex; gap: 12px; font-family: 'Segoe UI', sans-serif; color: var(--sa-600); font-size: 13px; margin-bottom: 8px; }
+        .phonetic-row span b { font-weight: 700; color: var(--sa-500); margin-right: 2px; font-size: 0.8em; vertical-align: baseline; position: relative; top: -1px; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div class="layout">
+        <div class="nav-pane">
+<div class="nav-app-bar" id="navAppBar">
+    <div class="app-bar-bg"></div>
+    
+    <div class="brand-wrapper">
+        <svg class="svg-icon" viewBox="0 0 74 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g class="logo-symbol">
+                <path class="arrow a1" fill="white" d="M27.23,79.4H15.63C12.58,68.23,6.73,52,0,39.31A335.92,335.92,0,0,0,13.65,0L24,2.35c-.82,2.83-1.76,5.65-2.7,8.48L21,12c-.82,2.24-1.65,4.6-2.47,6.83l-.35,1.06c-2.47,6.83-5.06,13.42-7.66,19.42,2.36,4.12,4.6,8.95,6.83,13.9l.47,1.17C21.76,63.6,25.29,73.14,27.23,79.4Z"/>
+                <path class="arrow a2" fill="white" d="M49.62,79.4H38C36,73.14,33,65.27,29.66,57.33l-.59-1.18a188.49,188.49,0,0,0-8.35-17c1.76-3.76,3.65-8,5.41-12.23l.47-1.18A253.26,253.26,0,0,0,35.78,0L46.14,2.47C45.56,4.35,44.85,6.12,44.26,8l-.47,1.06c-.35,1.18-.83,2.24-1.18,3.41l-.47,1.06c-.12.24-.12.36-.23.59l-.36,1.06c-.59,1.53-1.18,2.95-1.76,4.47l-.47,1.07c-.13.23-.13.35-.24.58l-.47,1.06-.47,1.18C35.9,29,33.55,34.25,31.31,39.08c2.47,4.12,4.94,8.94,7.3,13.77L39.19,54A271.49,271.49,0,0,1,49.62,79.4Z"/>
+                <path class="arrow a3" fill="white" d="M73.85,79.4H61.56C59.33,73.46,56,66.13,52.38,58.74l-.59-1.18-.59-1.18c-.11-.23-.11-.35-.23-.59l-.59-1.17a21.06,21.06,0,0,1-1.18-2.24l-.7-1.18C46.38,47,44,43,41.79,39.19c2.35-4.47,4.82-9.77,7.29-14.95l.6-1.17.58-1.18C54,13.77,57.44,5.65,59.44,0L70,2.59c-1.65,4.47-3.65,9.06-5.77,13.65L63.8,17.3c-1.06,2.24-2.24,4.36-3.3,6.59L60,25c-2.59,4.95-5.18,9.77-7.41,14.24,2.7,4.36,5.65,9.3,8.47,14.37l.59,1.17c.24.36.47.83.71,1.18L63,57C67.52,65.48,71.6,73.76,73.85,79.4Z"/>
+            </g>
+        </svg>
+
+        <div class="text-container">
+            <svg class="svg-text" viewBox="0 0 106 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="logo-text">
+                    <path class="cls-1" fill="white" d="M3.43,21.63,1.85,19.92a3.75,3.75,0,0,0,1.53-2.73V10H0V7.39H6.24v9.15L8.9,15.1c.41.72.48,1.8.77,2.33C4.92,20.47,3.82,21.19,3.43,21.63Zm2-15.82c-.91-.89-2.78-2.59-4.13-3.75L3.26.41c.44.36.94.74,1.42,1.15l.22.17c1,.79,1.92,1.63,2.56,2.18Zm13,16.3-.22-2.67c.6,0,1.39,0,2,0h1.06c.48,0,.72-.17.72-.53V3.41H9.31V1h15.6V19c0,1.42-.26,2.19-1.32,2.64S21.17,22.11,18.51,22.11Zm2-14.55H10V5.33H20.47Zm-.93,10H10.8v-8h8.74Zm-2.76-2.23V11.76H13.49v3.53Z"/>
+                    <path class="cls-1" fill="white" d="M30.24,22.08l-2.06-2.71A12.81,12.81,0,0,1,31.61,17V11.21H28.7V8.69h6.24V17a10.64,10.64,0,0,0,1.73.91c1.83.89,4.92,1.06,8.14,1.06h.24c1.25,0,2.76-.05,4.27-.12h.26c1.85-.1,3.63-.24,4.81-.38l0,2.85c-1.2.1-3,.17-4.73.22l-.41,0h-.38l-.41,0c-1.32,0-2.59,0-3.62,0-3.48,0-6.19-.26-8.28-1.22-1.59-.55-2.57-1.32-3.19-1.32C32.57,19.13,31.25,20.69,30.24,22.08Zm2.69-16.2C32.09,4.82,30.29,2.76,29,1.34L31.42,0,33.1,1.63l.19.19c.91.92,1.8,1.83,2.35,2.45ZM40.13,18a43.4,43.4,0,0,0-4-9.22c.55-1.13,1.1-2.52,1.63-3.89l.07-.24.1-.24C38.47,2.81,39,1.3,39.34.22l3,.67a20.66,20.66,0,0,1-1.24,3.48l-.1.21c0,.12-.1.22-.14.34l-.1.22c-.62,1.29-1.27,2.52-1.8,3.62.46.72.94,1.49,1.39,2.3l.12.22A43.78,43.78,0,0,1,43.27,17ZM46,17.93a42.71,42.71,0,0,0-4.44-9.19A70.58,70.58,0,0,0,45.12.22l3,.69A47.83,47.83,0,0,1,46,5.78L45.89,6c-.48,1-1,1.9-1.39,2.74a55.71,55.71,0,0,1,4.56,8.13Zm5.55,0A41.35,41.35,0,0,0,46.8,8.76,61.45,61.45,0,0,0,50.67.22l3,.74c-.19.5-.41,1-.62,1.49l-.1.21C52,4.85,50.83,7,49.83,8.76c.55.74,1.12,1.59,1.65,2.43l.14.21c1,1.56,1.88,3.17,2.53,4.44l.09.17c.15.31.27.58.38.84Z"/>
+                    <path class="cls-1" fill="white" d="M63.54,9.2h2.09v8.91h5.48V20H63.54Z"/>
+                    <path class="cls-1" fill="white" d="M71.43,16a4,4,0,0,1,4.18-4.14A4,4,0,0,1,79.75,16a4.12,4.12,0,0,1,0,.68H73.58a2.08,2.08,0,0,0,2.1,2,2,2,0,0,0,1.88-1.08L79.3,18a4.23,4.23,0,0,1-7.87-2Zm6.24-.67a2.07,2.07,0,0,0-4.14,0Z"/>
+                    <path class="cls-1" fill="white" d="M83.69,14.5l.11.28L84,14.5,85.61,12h2.13L85,16l2.8,4H85.65l-1.71-2.47-.14-.25-.11.25L82,20H79.85L82.65,16l-2.74-4H82Z"/>
+                    <path class="cls-1" fill="white" d="M88.66,12h2v4.52c0,1.21.46,1.84,1.32,1.84a2.32,2.32,0,0,0,2-1.45V12h2v5.66c0,.43.13.59.48.61V20a4.67,4.67,0,0,1-.87.08c-.73,0-1.22-.34-1.29-.92l0-.65a3.66,3.66,0,0,1-3.19,1.64c-1.64,0-2.51-1.08-2.51-3.12Z"/>
+                    <path class="cls-1" fill="white" d="M103.42,20V15.49c0-1.26-.46-1.82-1.26-1.82a2.36,2.36,0,0,0-2,1.65V20h-2V12h1.84v1.47a3.53,3.53,0,0,1,3.13-1.61c2,0,2.4,1.58,2.4,3.12V20Z"/>
+                </g>
+            </svg>
+        </div>
+    </div>
+</div>
+
+            <div class="nav-scroll-content">
+                <div class="nav-header">Data Source</div>
+
+                <input type="file" id="upWords" hidden accept=".txt">
+                <div class="nav-block" onclick="document.getElementById('upWords').click()">
+                    <div class="nav-row-main">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <span>导入单词表</span>
+                    </div>
+                    <div class="nav-row-sub" id="statusWords">
+                        <span class="sub-name">未选择文件</span>
+                        <span class="sub-info"></span>
+                    </div>
+                </div>
+
+                <input type="file" id="upText" hidden accept=".txt" multiple>
+                <div class="nav-block" onclick="document.getElementById('upText').click()">
+                    <div class="nav-row-main">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                        <span>导入文本</span>
+                    </div>
+                    <div class="nav-row-sub" id="statusText">
+                         <span class="sub-name">未选择文件</span>
+                         <span class="sub-info"></span>
+                    </div>
+                </div>
+                
+                 <div class="nav-block" onclick="createNewTab()">
+                    <div class="nav-row-main">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <span>新建空白页</span>
+                    </div>
+                </div>
+
+                <div class="nav-header" style="margin-top:20px">Actions</div>
+
+                <div class="nav-block" onclick="copyResult()">
+                    <div class="nav-row-main">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <span>复制标注结果</span>
+                    </div>
+                </div>
+                
+                <div class="nav-block" onclick="exportUnknownWords()">
+                    <div class="nav-row-main">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>导出超纲词列表</span>
+                    </div>
+                </div>
+
+                <div class="nav-block danger" onclick="clearEditor()">
+                    <div class="nav-row-main">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <span>清空阅读视图</span>
+                    </div>
+                </div>
+
+                <button class="action-block" id="btnRun" disabled onclick="runAnalysis()">
+                    开始标注
+                </button>
+            </div>
+        </div>
+
+        <div class="content-pane">
+            <div class="editor-col">
+                <div class="tab-bar hidden" id="tabBar"></div>
+                <div class="pane-head static">
+                    <span id="viewHeader" class="view-header">阅读视图</span>
+                    <div class="head-actions">
+                        <span id="totalWordStats" class="word-stats">0 Words</span>
+                        <button class="tool-btn" id="btnToggleEdit" onclick="toggleEditMode()" title="编辑模式">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-wrapper" id="editorWrapper">
+                    <div id="editor" class="editor" contenteditable="false" placeholder="在此粘贴或输入文本……"></div>
+                </div>
+            </div>
+
+            <div class="list-col">
+                <div class="pane-head dynamic" id="listPaneHead">
+                    <div class="header-row header-title-bar">
+                        <span class="view-header" style="max-width: unset;">超纲词 (<span id="countNum">0</span>)</span>
+                        <div class="tool-group">
+                            <button class="tool-btn add-btn-wrapper" id="btnAddManual" onclick="toggleAddInput()" title="手动添加超纲词" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <span>添加</span>
+                            </button>
+                            <button class="tool-btn sort-btn-wrapper" onclick="toggleSort()" title="切换列表排序">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>
+                                <span id="sortLabel">顺序</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="header-row header-input-bar">
+                         <input type="text" id="manualInput" class="seamless-input" placeholder="请输入单词，按 Enter 确认" onkeydown="handleInputKey(event)" onblur="closeAddInput()">
+                    </div>
+                </div>
+                <div id="list" class="list-body">
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+        let knownSet = new Set();
+        let currentRemovedSet = null; 
+        let ctxTarget = null;
+        let fileSystem = [];
+        let activeFileIndex = -1;
+        let currentUnknownData = [];
+        let isEditing = false;
+        
+        const lemmaCache = new Map();
+        const synonymCache = new Map();
+        const translationCache = new Map();
+
+        // --- NEW: Queue for Background Fetching ---
+        let fetchQueue = [];
+        let isProcessingQueue = false;
+        const FETCH_CONCURRENCY = 3; // Number of parallel requests
+        let backgroundInputTimer = null; // Debounce for typing
+
+        // ==========================================
+        //  新增模块：不规则动词处理逻辑 (Irregular Verb Logic)
+        // ==========================================
+        
+        const irregularMap = {};
+        // 常见前缀列表，按长度排序以优先匹配长前缀
+        const verbPrefixes = [
+            'under', 'inter', 'over', 'fore', 'with', 'mis', 'out', 'pre', 
+            'off', 'for', 'un', 're', 'be', 'in', 'up', 'a'
+        ];
+
+        // 动词数据源 (Base - Past - Participle - Variants)
+        const rawIrregularData = [
+            ['abide', 'abode', 'abided'], ['alight', 'alit', 'alighted'], ['arise', 'arose', 'arisen'],
+            ['awake', 'awoke', 'awaked', 'awoken'], ['be', 'was', 'were', 'been', 'am', 'is', 'are'],
+            ['bear', 'bore', 'borne', 'born'], ['beat', 'beat', 'beaten'], ['become', 'became', 'become'],
+            ['beget', 'begot', 'begotten', 'begat'], ['begin', 'began', 'begun'], ['bend', 'bent'],
+            ['bet', 'bet', 'betted'], ['bid', 'bid', 'bade', 'bidden'], ['bide', 'bode', 'bided'],
+            ['bind', 'bound'], ['bite', 'bit', 'bitten'], ['bleed', 'bled'], ['blow', 'blew', 'blown'],
+            ['break', 'broke', 'broken'], ['breed', 'bred'], ['bring', 'brought'], ['build', 'built'],
+            ['burn', 'burnt', 'burned'], ['burst', 'burst'], ['buy', 'bought'], ['can', 'could'],
+            ['cast', 'cast'], ['catch', 'caught'], ['choose', 'chose', 'chosen'], ['clad', 'clad', 'cladded'],
+            ['cleave', 'clove', 'cleft', 'cloven'], ['cling', 'clung'], ['come', 'came', 'come'],
+            ['cost', 'cost', 'costed'], ['creep', 'crept', 'creeped'], ['crow', 'crowed', 'crew'],
+            ['cut', 'cut'], ['deal', 'dealt'], ['dig', 'dug'], ['dive', 'dived', 'dove'],
+            ['do', 'did', 'done', 'does'], ['drag', 'dragged', 'drug'], ['draw', 'drew', 'drawn'],
+            ['dream', 'dreamed', 'dreamt'], ['drink', 'drank', 'drunk'], ['drive', 'drove', 'driven'],
+            ['dwell', 'dwelt', 'dwelled'], ['eat', 'ate', 'eaten'], ['fall', 'fell', 'fallen'],
+            ['feed', 'fed'], ['feel', 'felt'], ['fight', 'fought'], ['find', 'found'],
+            ['fit', 'fit', 'fitted'], ['flee', 'fled'], ['fling', 'flung'], ['fly', 'flew', 'flown'],
+            ['forbid', 'forbade', 'forbidden', 'forbid'], ['forget', 'forgot', 'forgotten'],
+            ['forsake', 'forsook', 'forsaken'], ['freeze', 'froze', 'frozen'], ['get', 'got', 'gotten'],
+            ['gild', 'gilded', 'gilt'], ['give', 'gave', 'given'], ['go', 'went', 'gone'],
+            ['grind', 'ground'], ['grow', 'grew', 'grown'], ['hang', 'hung', 'hanged'],
+            ['have', 'had', 'has'], ['hear', 'heard'], ['hew', 'hewed', 'hewn'], ['hide', 'hid', 'hidden'],
+            ['hit', 'hit'], ['hoist', 'hoist', 'hoisted'], ['hold', 'held'], ['hurt', 'hurt'],
+            ['keep', 'kept'], ['kneel', 'knelt', 'kneeled'], ['knit', 'knit', 'knitted'],
+            ['know', 'knew', 'known'], ['lay', 'laid'], ['lead', 'led'], ['lean', 'leaned', 'leant'],
+            ['leap', 'leaped', 'leapt'], ['learn', 'learned', 'learnt'], ['leave', 'left'],
+            ['lend', 'lent'], ['let', 'let'], ['lie', 'lay', 'lain'], ['light', 'lit', 'lighted'],
+            ['lose', 'lost'], ['make', 'made'], ['may', 'might'], ['mean', 'meant'], ['meet', 'met'],
+            ['mow', 'mowed', 'mown'], ['pay', 'paid'], ['plead', 'pleaded', 'pled'],
+            ['prove', 'proved', 'proven'], ['put', 'put'], ['quit', 'quitted', 'quit'], ['read', 'read'],
+            ['rend', 'rent'], ['rid', 'rid', 'ridded'], ['ride', 'rode', 'ridden', 'rid'],
+            ['ring', 'rang', 'rung'], ['rise', 'rose', 'risen'], ['run', 'ran', 'run'],
+            ['saw', 'sawed', 'sawn'], ['say', 'said', 'says'], ['see', 'saw', 'seen'],
+            ['seek', 'sought'], ['sell', 'sold'], ['send', 'sent'], ['set', 'set'],
+            ['sew', 'sewed', 'sewn'], ['shake', 'shook', 'shaken'], ['shall', 'should'],
+            ['shear', 'sheared', 'shore', 'shorn'], ['shed', 'shed'], ['shine', 'shone', 'shined'],
+            ['shit', 'shat', 'shit', 'shitted'], ['shoe', 'shoed', 'shod'], ['shoot', 'shot'],
+            ['show', 'showed', 'shown'], ['shrink', 'shrank', 'shrunk'], ['shrive', 'shrove', 'shriven'],
+            ['shut', 'shut'], ['sing', 'sang', 'sung'], ['sink', 'sank', 'sunk'], ['sit', 'sat'],
+            ['slay', 'slew', 'slayed', 'slain'], ['sleep', 'slept'], ['slide', 'slid'],
+            ['sling', 'slung'], ['slink', 'slunk'], ['slit', 'slit'], ['smell', 'smelled', 'smelt'],
+            ['smite', 'smote', 'smitten'], ['sneak', 'sneaked', 'snuck'], ['sow', 'sowed', 'sown'],
+            ['speak', 'spoke', 'spoken'], ['speed', 'sped', 'speeded'], ['spell', 'spelled', 'spelt'],
+            ['spend', 'spent'], ['spill', 'spilled', 'spilt'], ['spin', 'span', 'spun'],
+            ['spit', 'spat', 'spit'], ['split', 'split'], ['spoil', 'spoiled', 'spoilt'],
+            ['spread', 'spread'], ['spring', 'sprang', 'sprung'], ['stand', 'stood'],
+            ['stave', 'staved', 'stove'], ['steal', 'stole', 'stolen'], ['stick', 'stuck'],
+            ['sting', 'stung'], ['stink', 'stank', 'stunk'], ['strew', 'strewed', 'strewn'],
+            ['stride', 'strode', 'stridden'], ['strike', 'struck', 'stricken'], ['string', 'strung'],
+            ['strive', 'strove', 'striven'], ['swear', 'swore', 'sworn'],
+            ['sweat', 'sweated', 'sweat'], ['sweep', 'swept'], ['swell', 'swelled', 'swollen'],
+            ['swim', 'swam', 'swum'], ['swing', 'swang', 'swung'], ['take', 'took', 'taken'],
+            ['teach', 'taught'], ['tear', 'tore', 'torn'], ['tell', 'told'], ['text', 'texted', 'text'],
+            ['think', 'thought'], ['thrive', 'thrived', 'throve', 'thriven'], ['throw', 'threw', 'thrown'],
+            ['thrust', 'thrust', 'thrusted'], ['tread', 'trod', 'trodden'], ['wake', 'woke', 'woken'],
+            ['wear', 'wore', 'worn'], ['weave', 'wove', 'woven'], ['wed', 'wed', 'wedded'],
+            ['weep', 'wept'], ['wet', 'wet', 'wetted'], ['will', 'would'], ['win', 'won'],
+            ['wind', 'wound'], ['wring', 'wrang', 'wrung'], ['write', 'wrote', 'written']
+        ];
+
+        // 初始化映射表
+        function initIrregularDatabase() {
+            rawIrregularData.forEach(entry => {
+                const base = entry[0];
+                for (let i = 1; i < entry.length; i++) {
+                    const variant = entry[i];
+                    irregularMap[variant] = base;
+                }
+            });
+        }
+        
+        // 执行初始化
+        initIrregularDatabase();
+
+        // 核心算法：尝试还原不规则动词（支持前缀）
+        function getIrregularLemma(verb) {
+            if (!verb) return null;
+            const word = verb.toLowerCase().trim();
+
+            // 1. 直接匹配 (如 "went" -> "go")
+            if (irregularMap[word]) return irregularMap[word];
+
+            // 2. 前缀匹配 (如 "understood" -> "understand")
+            for (const prefix of verbPrefixes) {
+                if (word.startsWith(prefix)) {
+                    const root = word.slice(prefix.length);
+                    if (irregularMap[root]) {
+                        return prefix + irregularMap[root];
+                    }
+                }
+            }
+            return null;
+        }
+
+        // ==========================================
+        //  Ignored Words List
+        // ==========================================
+
+        const ignoreSet = new Set([
+            'i', 'me', 'my', 'mine', 'myself',
+            'we', 'us', 'our', 'ours', 'ourselves',
+            'you', 'your', 'yours', 'yourself', 'yourselves',
+            'he', 'him', 'his', 'himself',
+            'she', 'her', 'hers', 'herself',
+            'it', 'its', 'itself',
+            'they', 'them', 'their', 'theirs', 'themselves',
+            'this', 'that', 'these', 'those',
+            'some', 'any', 'no', 'every', 'each', 'all', 'both', 'either', 'neither',
+            'another', 'other', 'others', 'such',
+            'what', 'which', 'who', 'whom', 'whose', 'whatever', 'whichever', 'whoever',
+            'be', 'am', 'is', 'are', 'was', 'were', 'been', 'being',
+            'do', 'does', 'did', 'done', 'doing',
+            'have', 'has', 'had', 'having',
+            'can', 'cannot', 'could', 'will', 'would', 'shall', 'should',
+            'may', 'might', 'must', 'ought', 'need', 'dare',
+            'a', 'an', 'the',
+            'and', 'but', 'or', 'nor', 'so', 'if', 'because', 'as', 'than', 'while', 'when', 'where',
+            'to', 'of', 'in', 'on', 'at', 'by', 'for', 'with', 'from', 'about', 'into', 'over', 'after', 
+            'under', 'up', 'down', 'out', 'off', 'through', 'between', 'during', 'before', 'since', 'until',
+            's', 't', 'd', 'm', 'll', 're', 've', 
+            'th', 'st', 'nd', 'rd',
+            'mr', 'mrs', 'ms', 'dr', 'st', 'no', 'vol', 'p', 'pp',
+            'now', 'then', 'today', 'tomorrow', 'yesterday', 'tonight',
+            'always', 'usually', 'often', 'sometimes', 'never', 'ever', 'once', 'twice',
+            'here', 'there', 'everywhere', 'nowhere',
+            'english', 'chinese', 'american', 'japanese', 'french', 'german', 'spanish', 'italian', 'russian', 'indian',
+            'britain', 'uk', 'usa', 'america', 'china', 'japan', 'france', 'germany', 'spain', 'italy', 'russia', 'india',
+            'europe', 'asia', 'africa', 'australia', 'antarctica', 'north', 'south', 'east', 'west',
+            'etc'
+        ]);
+        
+        // ... (在 ignoreSet 的定义结束之后粘贴以下代码) ...
+
+        // ==========================================
+        //  Fix: Ignore Common Number Words
+        // ==========================================
+        const numberWords = [
+            // 基数词 (0-19)
+            'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+            'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen',
+            // 十位数
+            'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety',
+            // 单位
+            'hundred', 'thousand', 'million', 'billion', 'trillion',
+            // 常见序数词
+            'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth',
+            'twelfth', 'twentieth', 'thirtieth', 'hundredth', 'thousandth', 'millionth',
+            // 罗马数字 (小写)
+            'ii', 'iii', 'iv', 'vi', 'vii', 'viii', 'ix', 'xi', 'xii'
+        ];
+        
+        // 将它们批量加入忽略列表
+        numberWords.forEach(w => ignoreSet.add(w));
+
+        // 针对连字符数字的特殊处理 (如 twenty-one)
+        // 我们需要稍微修改 analyzeFile 函数中的过滤逻辑
+
+        const sortModes = [{ id: 'order', label: '正序' }, { id: 'freq', label: '次数' }, { id: 'alpha', label: '音序' }];
+        let currentSortIndex = 0;
+
+        const editor = document.getElementById('editor');
+
+        editor.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            document.execCommand('insertText', false, text);
+            triggerBackgroundPreload(text);
+        });
+
+        const listEl = document.getElementById('list');
+        const btnRun = document.getElementById('btnRun');
+        const btnAddManual = document.getElementById('btnAddManual');
+        const btnToggleEdit = document.getElementById('btnToggleEdit');
+        const totalStats = document.getElementById('totalWordStats');
+        const tabBar = document.getElementById('tabBar');
+        const viewHeader = document.getElementById('viewHeader');
+        const navAppBar = document.getElementById('navAppBar');
+
+// ============================================================
+        //  核心单词还原逻辑 (完整整合版)
+        // ============================================================
+        
+        // 主函数
+        function getLemma(text) {
+            const w = text.trim().toLowerCase();
+            if(!w) return [];
+            
+            // 缓存检查
+            if (lemmaCache.has(w)) return lemmaCache.get(w);
+            
+            const candidates = [];
+
+            // 1. 不规则动词 (调用全局定义的 getIrregularLemma)
+            if (typeof getIrregularLemma === 'function') {
+                const irregularRoot = getIrregularLemma(w);
+                if (irregularRoot && irregularRoot !== w) {
+                    candidates.push(irregularRoot);
+                }
+            }
+
+            // ============================================================
+            // 分流处理：连字符词 vs 普通词
+            // ============================================================
+            if (w.includes('-')) {
+                // Path A: 连字符复合词专用逻辑
+                handleCompoundWord(w, candidates);
+            } else {
+                // Path B: 普通单词逻辑
+                handleNormalWord(w, candidates);
+            }
+            
+            // 始终包含原词
+            if (!candidates.includes(w)) candidates.push(w);
+
+            // 去重并缓存
+            const uniqueCandidates = [...new Set(candidates)];
+            lemmaCache.set(w, uniqueCandidates);
+            return uniqueCandidates; 
+        }
+
+        // --- 子函数 1：处理连字符复合词 (修复 die-hards, never-ending) ---
+        function handleCompoundWord(w, candidates) {
+            const parts = w.split('-');
+            if (parts.length < 2) return;
+            
+            const lastPart = parts[parts.length - 1];
+
+            // 1. 【安全守门员】
+            // 如果是以 ing 或 ed 结尾 (never-ending, self-styled)
+            // 直接退出！不做任何还原。保持原词。
+            if (lastPart.endsWith('ing') || lastPart.endsWith('ed')) {
+                return; 
+            }
+
+            // 2. 名词单数还原 (针对 die-hards)
+            
+            // 白名单：这些词以 s 结尾但不能去 s
+            const nonPlurals = new Set([
+                'news', 'series', 'species', 'lens', 'bias', 'chaos', 
+                'status', 'virus', 'corpus', 'bonus', 'focus', 'genius',
+                'analysis', 'crisis', 'thesis', 'basis', 'diagnosis',
+                'physics', 'maths', 'politics', 'economics', 'statistics', 
+                'robotics', 'mechanics', 'gymnastics', 'athletics',
+                'diabetes', 'rabies', 'herpes' 
+            ]);
+
+            // 条件：以s结尾，不是ss，不在白名单，长度够长
+            if (lastPart.endsWith('s') && !lastPart.endsWith('ss') && !nonPlurals.has(lastPart) && lastPart.length > 3) {
+                
+                // 策略 A: 物理去 s (die-hards -> die-hard)
+                const simpleBase = lastPart.slice(0, -1);
+                const compoundSimple = parts.slice(0, -1).join('-') + '-' + simpleBase;
+                candidates.push(compoundSimple);
+
+                // 策略 B: 物理去 es (match-boxes -> match-box)
+                if (lastPart.endsWith('es') && lastPart.length > 4) {
+                    const esBase = lastPart.slice(0, -2);
+                    const compoundEs = parts.slice(0, -1).join('-') + '-' + esBase;
+                    candidates.push(compoundEs);
+                }
+                
+                // 策略 C: 尝试 NLP 还原最后一部分 (dictionaries -> dictionary)
+                const lastDoc = nlp(lastPart);
+                lastDoc.nouns().toSingular();
+                const nlpSingular = lastDoc.text().trim().toLowerCase();
+                
+                if (nlpSingular && nlpSingular !== lastPart && nlpSingular.length > 2) {
+                    const compoundNlp = parts.slice(0, -1).join('-') + '-' + nlpSingular;
+                    if (!candidates.includes(compoundNlp)) candidates.push(compoundNlp);
+                }
+            }
+        }
+
+        // --- 子函数 2：处理普通单词 (修复 fully -> full) ---
+        function handleNormalWord(w, candidates) {
+            // 1. NLP 还原
+            const doc = nlp(w);
+            doc.verbs().toInfinitive(); 
+            doc.nouns().toSingular();
+            let lemma = doc.text().trim().toLowerCase();
+            if (lemma && lemma !== w) candidates.push(lemma);
+
+            // 2. 手动后缀剥离 (backup)
+            const addVariants = (base) => {
+                if (base.length <= 2) return;
+                candidates.push(base);
+                candidates.push(base + 'e'); // clos -> close
+                if (base.length > 2) { // bigg -> big
+                    const last = base.slice(-1);
+                    const secondLast = base.slice(-2, -1);
+                    if (last === secondLast && /^[a-z]$/.test(last)) candidates.push(base.slice(0, -1));
+                }
+                if (base.endsWith('i')) candidates.push(base.slice(0, -1) + 'y'); // happi -> happy
+            };
+
+            if (w.endsWith('est') && w.length > 4) addVariants(w.slice(0, -3));
+            if (w.endsWith('er') && w.length > 3) addVariants(w.slice(0, -2));
+            
+            // --- 针对 -ly 的修复 (fully -> full) ---
+            if (w.endsWith('ly') && w.length > 3) {
+                const base = w.slice(0, -2);
+                candidates.push(base);
+                
+                // 补回丢失的 l (fully -> ful -> full)
+                if (base === 'ful' || base === 'dul' || base === 'shril') {
+                    candidates.push(base + 'l');
+                }
+                // wholly -> whole
+                if (base === 'whol') candidates.push('whole');
+                // truly -> true
+                if (base === 'tru') candidates.push('true');
+                // happi -> happy
+                if(base.endsWith('i')) candidates.push(base.slice(0,-1)+'y');
+                // simply -> simple (猜测性补全)
+                if (base.length > 2 && !['a','e','i','o','u','y'].includes(base.slice(-1))) {
+                    candidates.push(base + 'le');
+                }
+            }
+
+            if (w.endsWith('ed') && w.length > 3) addVariants(w.slice(0, -2));
+            if (w.endsWith('ing') && w.length > 4) addVariants(w.slice(0, -3));
+        }
+
+        function isWordKnown(rawWord) {
+            const lower = rawWord.toLowerCase();
+            if (knownSet.has(lower)) return true;
+            const candidates = getLemma(lower); 
+            for (const cand of candidates) { if (knownSet.has(cand)) return true; }
+            return false;
+        }
+
+        function getCanonicalForm(rawWord) {
+            const candidates = getLemma(rawWord);
+            // 优先返回已知的原型（比如 knownSet 里有 go，输入 went，lemma返回 [go, went]，因为 go 在 knownSet 里，所以返回 go）
+            for (const cand of candidates) { if (knownSet.has(cand)) return cand; }
+            // 如果都不认识，返回第一个（通常是经过不规则还原或 compromise 还原的最短形式）
+            return candidates[0]; 
+        }
+
+        // --- Basic UI Logic ---
+        let scrollSpeed = 0, animationFrameId = null;
+        function scrollTabBar() {
+            if (scrollSpeed !== 0) { tabBar.scrollLeft += scrollSpeed; animationFrameId = requestAnimationFrame(scrollTabBar); }
+            else { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
+        }
+        tabBar.addEventListener('mousemove', (e) => {
+            const rect = tabBar.getBoundingClientRect(); const x = e.clientX - rect.left;
+            if (x < 100) scrollSpeed = -((1 - (x / 100)) * 15);
+            else if (x > rect.width - 100) scrollSpeed = (1 - ((rect.width - x) / 100)) * 15;
+            else scrollSpeed = 0;
+            if (scrollSpeed !== 0 && !animationFrameId) scrollTabBar();
+        });
+        tabBar.addEventListener('mouseleave', () => { scrollSpeed = 0; });
+
+        editor.addEventListener('input', () => {
+            updateBtnState();
+            if(activeFileIndex !== -1 && fileSystem[activeFileIndex]) {
+                fileSystem[activeFileIndex].content = editor.innerText;
+                fileSystem[activeFileIndex].wordCount = countWords(editor.innerText);
+                
+                // --- 【新增】 ---
+                // 用户修改了文本，说明之前的分析结果（rawHtml）已经过期了
+                // 必须清空它，以便下次 switchTab 时走上面的 else 分支（显示最新纯文本）
+                fileSystem[activeFileIndex].rawHtml = ''; 
+                fileSystem[activeFileIndex].analysisResults = []; // 同时清空旧的分析数据
+                // ---------------
+            }
+            // Debounce Preload
+            if (backgroundInputTimer) clearTimeout(backgroundInputTimer);
+            backgroundInputTimer = setTimeout(() => {
+                triggerBackgroundPreload(editor.innerText);
+            }, 800);
+        });
+
+        // --- 【新增】监听阅读器滚动，实时保存进度 ---
+        editor.addEventListener('scroll', () => {
+            // 只有在已加载文件的情况下才保存
+            if (activeFileIndex !== -1 && fileSystem[activeFileIndex]) {
+                fileSystem[activeFileIndex].scrollPos = editor.scrollTop;
+            }
+        });
+
+        function toggleEditMode(forceState = null) {
+            if (forceState !== null) isEditing = forceState; else isEditing = !isEditing;
+            editor.contentEditable = isEditing;
+            const wrapper = document.getElementById('editorWrapper');
+            if (isEditing) { wrapper.classList.add('editing-mode'); editor.focus(); btnToggleEdit.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>`; } 
+            else { wrapper.classList.remove('editing-mode'); btnToggleEdit.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`; }
+        }
+
+        function updateBtnState() {
+            const hasWords = knownSet.size > 0;
+            const hasText = fileSystem.length > 0 || editor.innerText.trim().length > 0;
+            if (hasWords && hasText) btnRun.removeAttribute('disabled'); else btnRun.setAttribute('disabled', 'true');
+            btnAddManual.disabled = activeFileIndex === -1;
+        }
+
+        // --- File I/O ---
+        document.getElementById('upWords').onchange = e => {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                const rawList = ev.target.result.split(/\r?\n/).map(w => w.trim().toLowerCase()).filter(w => w);
+                knownSet = new Set(rawList); lemmaCache.clear(); synonymCache.clear(); translationCache.clear();
+                const name = f.name.replace(/\.txt$/i, '');
+                document.getElementById('statusWords').innerHTML = `<span class="sub-name" title="${name}">${name}</span><span class="sub-info">(${rawList.length} 词)</span>`;
+                updateBtnState(); showToast(`已导入 ${rawList.length} 个单词`, 'success');
+            }; r.readAsText(f);
+        };
+
+        document.getElementById('upText').onchange = async e => {
+            const files = Array.from(e.target.files); if (files.length === 0) return;
+            if(files.length > 3) showToast(`正在加载 ${files.length} 个文件...`, 'info');
+            const readers = files.map(file => new Promise((resolve, reject) => {
+                const r = new FileReader(); r.onload = ev => resolve({ name: file.name, content: ev.target.result }); r.onerror = reject; r.readAsText(file);
+            }));
+            try {
+                const results = await Promise.all(readers);
+                let combinedText = "";
+                results.forEach(res => {
+                fileSystem.push({ 
+                id: Date.now() + Math.random(), 
+                        name: res.name, 
+                        content: res.content, 
+                        rawHtml: escapeHtml(res.content), 
+                        wordCount: countWords(res.content), 
+                        analysisResults: [], 
+                        removedSet: new Set(), 
+                        manualSet: new Set(),
+                        scrollPos: 0  // <--- 【建议新增】初始化滚动位置
+                    });
+                    combinedText += res.content + " ";
+                });
+                renderTabs(); if (activeFileIndex === -1 && fileSystem.length > 0) switchTab(0);
+                document.getElementById('statusText').innerHTML = `<span class="sub-name">已加载</span><span class="sub-info">${fileSystem.length} 个文件</span>`;
+                updateBtnState(); showToast(`已添加 ${files.length} 个文件`, 'success');
+                
+                // --- Start Background Fetch ---
+                triggerBackgroundPreload(combinedText);
+
+            } catch (err) { showToast('文件读取失败', 'error'); } e.target.value = '';
+        };
+
+        function countWords(text) { return text.replace(/[\u200B-\u200D\uFEFF]/g, '').split(/\s+/).filter(w => w.length > 0).length; }
+
+        // --- NEW: Background Fetch Logic ---
+        function triggerBackgroundPreload(text) {
+            // 1. Scan text for potential unknown words (pure logic, no DOM op)
+            const uniqueUnknowns = new Set();
+            const regex = /[a-zA-Z\u00C0-\u00FF]+(?:-[a-zA-Z\u00C0-\u00FF]+)*/g;
+            let match;
+            
+            // Limit processing for huge text to avoid main thread blocking
+            const MAX_SCAN_LENGTH = 100000; 
+            const textToScan = text.length > MAX_SCAN_LENGTH ? text.substring(0, MAX_SCAN_LENGTH) : text;
+
+            while ((match = regex.exec(textToScan)) !== null) {
+                const lower = match[0].toLowerCase();
+                if (ignoreSet.has(lower)) continue;
+                const lemma = getCanonicalForm(lower);
+                if (ignoreSet.has(lemma)) continue;
+                if (!isWordKnown(lower)) {
+                    // Only add if not already cached and not already in queue
+                    if (!translationCache.has(lemma) && !synonymCache.has(lemma) && !fetchQueue.includes(lemma)) {
+                        uniqueUnknowns.add(lemma);
+                    }
+                }
+            }
+
+            if (uniqueUnknowns.size > 0) {
+                const newWords = Array.from(uniqueUnknowns);
+                fetchQueue.push(...newWords);
+                if (!isProcessingQueue) {
+                    // showToast(`正在后台预加载 ${newWords.length} 个生词数据...`, 'info'); 
+                    processFetchQueue();
+                }
+            }
+        }
+
+        async function processFetchQueue() {
+            if (isProcessingQueue || fetchQueue.length === 0) return;
+            isProcessingQueue = true;
+
+            // Simple worker-like pattern
+            while (fetchQueue.length > 0) {
+                const batch = fetchQueue.splice(0, FETCH_CONCURRENCY);
+                await Promise.all(batch.map(async (word) => {
+                    try {
+                        await preloadWordData(word);
+                    } catch (e) { console.warn('Fetch failed for', word); }
+                }));
+                // Small delay to be polite to APIs
+                await new Promise(r => setTimeout(r, 100));
+            }
+
+            isProcessingQueue = false;
+        }
+
+        // --- Tabs ---
+        function renderTabs() {
+            if (fileSystem.length > 0) { tabBar.classList.remove('hidden'); navAppBar.classList.add('expanded'); } else { tabBar.classList.add('hidden'); navAppBar.classList.remove('expanded'); }
+            const currentIds = fileSystem.map(f => `tab-${f.id}`);
+            Array.from(tabBar.children).forEach(tab => { if (!currentIds.includes(tab.id)) tab.remove(); });
+            fileSystem.forEach((file, index) => {
+                let tab = document.getElementById(`tab-${file.id}`);
+                if (!tab) {
+                    tab = document.createElement('div'); tab.id = `tab-${file.id}`; tab.className = `tab-item`;
+                    tab.innerHTML = `<span class="tab-name">${escapeHtml(file.name)}</span><span class="tab-close" onclick="closeTab(event, ${index})">×</span>`;
+                    tab.onclick = (e) => switchTab(index); tabBar.appendChild(tab);
+                } else {
+                    tab.querySelector('.tab-close').onclick = (e) => { e.stopPropagation(); closeTab(index); }; tab.onclick = () => switchTab(index);
+                }
+                if (index === activeFileIndex) tab.classList.add('active'); else tab.classList.remove('active');
+            });
+        }
+
+        function switchTab(index) {
+            if (index < 0 || index >= fileSystem.length) return;
+            
+            toggleEditMode(false); 
+            activeFileIndex = index; 
+            currentRemovedSet = fileSystem[index].removedSet; // 更新当前的移除集合引用
+            
+            renderTabs(); 
+            updateBtnState();
+            
+            const file = fileSystem[index];
+            
+            // 1. 恢复内容
+            if (file.rawHtml && file.rawHtml.length > 0) {
+                editor.innerHTML = file.rawHtml; 
+            } else {
+                editor.innerText = file.content || ''; 
+            }
+
+            // ============================================================
+            // --- [修复] 重新应用“已移除”状态 ---
+            // ============================================================
+            // 因为 rawHtml 是静态缓存，它不包含后来动态添加的 .removed 类。
+            // 所以每次切换 Tab，都要根据 removedSet 重新把 .removed 类加上去。
+            if (file.removedSet && file.removedSet.size > 0) {
+                const allWords = editor.querySelectorAll('.m-word');
+                allWords.forEach(el => {
+                    const w = el.getAttribute('data-w');
+                    if (file.removedSet.has(w)) {
+                        el.classList.add('removed');
+                        // 移除进入动画，防止诈尸时还飘一下
+                        el.classList.remove('animate-in');
+                        el.style.animation = 'none';
+                        el.style.opacity = '1';
+                    }
+                });
+            }
+            // ============================================================
+            
+            // 2. 恢复滚动位置
+            editor.scrollTop = file.scrollPos || 0; 
+
+            // 3. 更新头部信息
+            totalStats.textContent = `${file.wordCount} Words`; 
+            viewHeader.textContent = `阅读视图：${file.name}`;
+            
+            // 4. 播放进场动画 (会跳过上面已经标记为 removed 的词)
+            animateVisibleWords();
+
+            // 5. 刷新右侧列表
+            if (file.analysisResults && file.analysisResults.length > 0) {
+                currentUnknownData = file.analysisResults; 
+                sortData(sortModes[currentSortIndex].id);
+            } else { 
+                currentUnknownData = []; 
+                renderList(true); 
+            }
+        }
+
+        function closeTab(index) {
+            const tabEl = tabBar.children[index]; if(tabEl) tabEl.classList.add('closing');
+            setTimeout(() => {
+                fileSystem.splice(index, 1);
+                if (fileSystem.length === 0) clearEditor();
+                else {
+                    if (index === activeFileIndex) activeFileIndex = Math.max(0, index - 1);
+                    else if (index < activeFileIndex) activeFileIndex--;
+                    renderTabs(); switchTab(activeFileIndex);
+                }
+                document.getElementById('statusText').innerHTML = `<span class="sub-name">${fileSystem.length > 0 ? '已加载' : '未选择文件'}</span><span class="sub-info">${fileSystem.length > 0 ? fileSystem.length + ' 个文件' : ''}</span>`;
+            }, 300);
+        }
+
+        function clearEditor() {
+            fileSystem = []; activeFileIndex = -1; currentUnknownData = []; currentRemovedSet = null; 
+            editor.innerText = ''; toggleEditMode(false); renderTabs(); renderList(); updateBtnState();
+            document.getElementById('statusText').innerHTML = '<span class="sub-name">未选择文件</span><span class="sub-info"></span>';
+            document.getElementById('countNum').textContent = '0'; document.getElementById('upText').value = ''; 
+            viewHeader.textContent = '阅读视图'; showToast('已清空阅读视图', 'info');
+        }
+
+        function analyzeFile(file) {
+            if(!file.removedSet) file.removedSet = new Set();
+            if(!file.manualSet) file.manualSet = new Set();
+            
+            const map = new Map(); 
+            let html = ''; 
+            let lastIdx = 0; 
+            const regex = /[a-zA-Z\u00C0-\u00FF]+(?:-[a-zA-Z\u00C0-\u00FF]+)*/g; 
+            let match;
+
+            while ((match = regex.exec(file.content)) !== null) {
+                let txt = match[0]; 
+                const idx = match.index; 
+                const lower = txt.toLowerCase();
+                
+                html += escapeHtml(file.content.substring(lastIdx, idx));
+                
+                let shouldHighlight = false;
+                let lemma = lower; 
+
+                // 过滤单字母干扰
+                const isSingleLetterNoise = lower.length === 1 && lower !== 'a' && lower !== 'i';
+
+                if (!ignoreSet.has(lower) && !isSingleLetterNoise) {
+                    
+                    const parts = lower.split('-');
+                    if (parts.length > 1 && parts.every(p => ignoreSet.has(p))) {
+                        ignoreSet.add(lower);
+                        shouldHighlight = false;
+                    } 
+                    else {
+                        lemma = getCanonicalForm(lower);
+
+                        // --- [修复] 判定逻辑 ---
+                        // 只有当它不在 ignoreSet 中，
+                        // 并且 (是生词 OR 是手动添加的词)，
+                        // 并且 (【关键】它不在 removedSet 中) 时，才高亮。
+                        if (!ignoreSet.has(lemma)) {
+                            const isKnown = isWordKnown(lower); 
+                            
+                            // 增加 !file.removedSet.has(lemma) 判断
+                            if ((!isKnown || file.manualSet.has(lemma)) && !file.removedSet.has(lemma)) {
+                                 shouldHighlight = true;
+                                 if (!map.has(lemma)) map.set(lemma, { count: 0, firstIndex: idx });
+                                 map.get(lemma).count++;
+                            }
+                        }
+                    } 
+                }
+
+                if (shouldHighlight) {
+                    const safeLemma = lemma.replace(/'/g, "&apos;");
+                    html += `<span class="m-word" data-w="${safeLemma}" onclick="onWordClick(event, this)" oncontextmenu="openCtx(event, '${safeLemma}'); return false;">${txt}</span>`;
+                } else { 
+                    html += txt; 
+                }
+                
+                lastIdx = idx + match[0].length;
+            }
+            
+            html += escapeHtml(file.content.substring(lastIdx));
+            file.rawHtml = html;
+            file.analysisResults = Array.from(map.entries()).map(([w, val]) => ({ word: w, count: val.count, firstIndex: val.firstIndex }));
+            return file.analysisResults.length;
+        }
+
+        // --- Shared Animation Logic ---
+        function animateVisibleWords() {
+            // Remove all existing to reset
+            const allSpans = editor.querySelectorAll('.m-word');
+            allSpans.forEach(el => {
+                el.classList.remove('animate-in');
+                el.style.animationDelay = '';
+            });
+            
+            // Force Reflow
+            void editor.offsetWidth;
+
+            const editorRect = editor.getBoundingClientRect();
+            const visibleBottom = editorRect.bottom;
+            const spans = Array.from(editor.querySelectorAll('.m-word:not(.removed)'));
+            
+            // Filter visible words
+            const visibleSpans = spans.filter(span => {
+                const rect = span.getBoundingClientRect();
+                return rect.top < visibleBottom && rect.bottom > editorRect.top;
+            });
+
+            // Calculate dynamic delay (Faster total time: 0.6s)
+            const totalDuration = 0.6; 
+            const step = visibleSpans.length > 0 ? totalDuration / visibleSpans.length : 0;
+            
+            visibleSpans.forEach((span, i) => {
+                span.style.animationDelay = `${i * step}s`;
+                span.classList.add('animate-in');
+            });
+
+            // Clean up exact time
+            const cleanupTime = (totalDuration * 1000) + 700; 
+            setTimeout(() => {
+                visibleSpans.forEach(el => {
+                    el.classList.remove('animate-in');
+                    el.style.animationDelay = ''; 
+                });
+            }, cleanupTime);
+        }
+
+        function runAnalysis() {
+            // --- Logo Animation Trigger ---
+            const logoSvg = document.querySelector('.svg-icon');
+            if (logoSvg) {
+                logoSvg.classList.remove('running'); // 重置状态
+                void logoSvg.offsetWidth; // 强制浏览器重排 (Force Reflow) 以重启动画
+                logoSvg.classList.add('running'); // 添加动画类
+                
+                // 动画结束后移除类 (可选，保持干净)
+                setTimeout(() => logoSvg.classList.remove('running'), 1000);
+            }
+            // ------------------------------
+            if (activeFileIndex !== -1 && fileSystem[activeFileIndex]) {
+                 fileSystem[activeFileIndex].content = editor.innerText;
+                 fileSystem[activeFileIndex].wordCount = countWords(editor.innerText);
+            } else if (fileSystem.length === 0 && editor.innerText.trim().length > 0) {
+                fileSystem = [{ id: Date.now(), name: '临时输入', content: editor.innerText, rawHtml: '', wordCount: countWords(editor.innerText), analysisResults: [], removedSet: new Set(), manualSet: new Set() }];
+                activeFileIndex = 0; renderTabs();
+                // Trigger preload for manual text
+                triggerBackgroundPreload(editor.innerText);
+            }
+            if (fileSystem.length === 0) return showToast('未复制到内容', 'warn');
+            showToast('正在分析', 'info'); toggleEditMode(false);
+            setTimeout(() => {
+                fileSystem.forEach(file => { analyzeFile(file); });
+                if (activeFileIndex !== -1) switchTab(activeFileIndex);
+                showToast(`分析完成`, 'success'); updateBtnState();
+                renderList(true); // Pass true to animate entry
+            }, 200);
+        }
+
+        const listPaneHead = document.getElementById('listPaneHead');
+        const manualInput = document.getElementById('manualInput');
+        function toggleAddInput() {
+            if (activeFileIndex === -1) return showToast('请先选择或输入文本', 'warn');
+            listPaneHead.classList.add('mode-input'); manualInput.value = '';
+            setTimeout(() => manualInput.focus({ preventScroll: true }), 50);
+        }
+        function closeAddInput() { setTimeout(() => { listPaneHead.classList.remove('mode-input'); }, 100); }
+        function handleInputKey(e) {
+            if (e.key === 'Enter') { e.stopPropagation(); confirmAddWord(); manualInput.blur(); } 
+            else if (e.key === 'Escape') { manualInput.blur(); }
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (isEditing) return; if (document.activeElement === manualInput) return;
+                if (!btnAddManual.disabled) { e.preventDefault(); toggleAddInput(); }
+            }
+        });
+        // --- 快捷键 Ctrl+C 复制高亮词 ---
+        document.addEventListener('keydown', async (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+                if (isEditing || 
+                    document.activeElement.tagName === 'INPUT' || 
+                    document.activeElement.tagName === 'TEXTAREA' ||
+                    window.getSelection().toString().length > 0) {
+                    return; 
+                }
+                const target = document.querySelector('.m-word.focus') || document.querySelector('.l-item.active');
+                if (target) {
+                    const word = target.getAttribute('data-w');
+                    if (word) {
+                        e.preventDefault(); 
+                        try {
+                            await navigator.clipboard.writeText(word);
+                            showToast(`已复制: ${word}`, 'success');
+                            if (target.classList.contains('m-word')) {
+                                triggerWordPulse(target);
+                            }
+                        } catch (err) {
+                            showToast('复制失败', 'error');
+                        }
+                    }
+                }
+            }
+        });
+
+        function confirmAddWord() {
+            const rawWord = manualInput.value; if (!rawWord) return;
+            const lowerRaw = rawWord.trim().toLowerCase(); if (!lowerRaw) return;
+            if (!/^[a-zA-Z\u00C0-\u00FF]+(?:-[a-zA-Z\u00C0-\u00FF]+)*$/.test(lowerRaw)) return showToast('输入含非法字符', 'warn');
+            const w = getCanonicalForm(lowerRaw);
+            const file = fileSystem[activeFileIndex];
+
+            // 1. 如果已移除，恢复
+            if (currentRemovedSet && currentRemovedSet.has(w)) {
+                execCtxAction(w); 
+                // 这里也传 w，让列表刷新时定位到它
+                renderList(true, w);
+                setTimeout(() => triggerListSelection(w, true), 50);
+                return;
+            }
+            
+            // 2. 如果已存在，提示并定位
+            const alreadyTracked = currentUnknownData.find(d => d.word === w);
+            if (alreadyTracked) {
+                showToast(`单词已存在，已定位`, 'info'); 
+                // 传 w 进行定位重绘
+                renderList(true, w);
+                setTimeout(() => triggerListSelection(w, true), 50);
+                return;
+            }
+
+            // 3. 新增单词逻辑
+            if (!file.manualSet) file.manualSet = new Set();
+            file.manualSet.add(w);
+            preloadWordData(w); 
+            analyzeFile(file);
+            switchTab(activeFileIndex); // 注意：switchTab 内部也会调用 renderList，但可能不带参数
+
+            const safeSelector = w.replace(/'/g, "\\'");
+            
+            // 修复编辑器内高亮状态
+            setTimeout(() => {
+                const newSpans = document.querySelectorAll(`.m-word[data-w="${safeSelector}"]`);
+                newSpans.forEach(el => {
+                    el.classList.remove('animate-in');
+                    el.style.animation = 'none'; 
+                    el.style.opacity = '1';
+                    el.style.animationDelay = '0s';
+                });
+            }, 0);
+
+            const newData = file.analysisResults.find(d => d.word === w);
+            if (newData) {
+                showToast(`已添加 ${w}`, 'success'); 
+                // 【核心修改】传入 w 作为第二个参数，告诉 renderList 要跳到这里再播动画
+                renderList(true, w);
+                setTimeout(() => triggerListSelection(w, true), 300); // 稍微延时选中高亮，等动画开始
+            } else {
+                showToast(`已添加 ${w} （当前文本中未找到该词）`, 'warn');
+                currentUnknownData.push({ word: w, count: 0, firstIndex: 999999 });
+                // 【核心修改】同上
+                renderList(true, w);
+                setTimeout(() => {
+                    const item = document.querySelector(`.l-item[data-w="${safeSelector}"]`);
+                    if(item) {
+                        item.classList.add('active'); // 只选中，不一定要再次按压动画
+                    }
+                }, 300);
+            }
+        }
+
+        async function preloadWordData(word) {
+            // Return promise to allow await in queue
+            const promises = [];
+            if (!synonymCache.has(word)) {
+                promises.push(fetch(`https://api.datamuse.com/words?ml=${word}&max=30`).then(r=>r.json()).then(d=>{
+                    synonymCache.set(word, d.filter(i=>isWordKnown(i.word)).map(i=>i.word));
+                }).catch(console.warn));
+            }
+            if (!translationCache.has(word)) {
+                promises.push(fetch(`https://v2.xxapi.cn/api/englishwords?word=${word}`).then(r=>r.json()).then(d=>translationCache.set(word, d)).catch(console.warn));
+            }
+            return Promise.all(promises);
+        }
+
+        // Helper: Play the pulse animation via JS (for code-triggered events only)
+        function playItemAnimation(el) {
+            if(!el) return;
+            el.classList.add('trigger-anim');
+            setTimeout(() => {
+                el.classList.remove('trigger-anim');
+            }, 500);
+        }
+
+        function triggerListSelection(w, skipAnim = false) { 
+            const safeW = w.replace(/'/g, "\\'");
+            const item = document.querySelector(`.l-item[data-w="${safeW}"]`);
+            if (item) { 
+                if (!skipAnim) {
+                    playItemAnimation(item); 
+                }
+                handleListClick(item, w.replace(/'/g, "\\'"), false); 
+                item.scrollIntoView({block: 'center', behavior: 'smooth'}); 
+            }
+        }
+
+        function toggleSort() {
+            currentSortIndex = (currentSortIndex + 1) % sortModes.length;
+            document.querySelector('#sortLabel').textContent = sortModes[currentSortIndex].label;
+            sortData(sortModes[currentSortIndex].id);
+        }
+        function sortData(type) {
+            if(!currentUnknownData) return;
+            if (type === 'alpha') currentUnknownData.sort((a, b) => a.word.localeCompare(b.word));
+            else if (type === 'freq') currentUnknownData.sort((a, b) => b.count - a.count);
+            else currentUnknownData.sort((a, b) => a.firstIndex - b.firstIndex); 
+            renderList(true); // Pass true to animate entry
+        }
+
+        // --- Handle List Click (FIXED) ---
+        window.handleListClick = function(el, w, triggerPulse = true) {
+            el.classList.add('pressed');
+            setTimeout(() => {
+                el.classList.remove('pressed');
+                setTimeout(() => {
+                    locateWord(w, triggerPulse);
+                }, 0); 
+            }, 50);
+        }
+
+        let renderCleanupTimer = null; 
+
+        function renderList(animate = false, jumpToWord = null) { // <--- 1. 新增参数
+            // 清理旧定时器
+            if (renderCleanupTimer) {
+                clearTimeout(renderCleanupTimer);
+                renderCleanupTimer = null;
+            }
+
+            // 更新角标
+            let activeCount = 0;
+            if (currentUnknownData && currentUnknownData.length > 0) {
+                activeCount = !currentRemovedSet ? currentUnknownData.length : currentUnknownData.reduce((acc, item) => acc + (currentRemovedSet.has(item.word) ? 0 : 1), 0);
+            }
+            document.getElementById('countNum').textContent = activeCount;
+            
+            // 生成 HTML
+            let html = '';
+            currentUnknownData.forEach((item) => {
+                const isRm = currentRemovedSet && currentRemovedSet.has(item.word);
+                const safeW = item.word.replace(/'/g, "&apos;"); 
+                const safeJsW = item.word.replace(/'/g, "\\'");
+                
+                // 动画模式下，初始全透明
+                const initialStyle = animate ? 'style="opacity:0"' : '';
+
+                html += `<div class="l-item ${isRm ? 'removed-item' : ''}" ${initialStyle} data-w="${safeW}" onclick="handleListClick(this, '${safeJsW}', false)" oncontextmenu="openCtx(event, '${safeJsW}'); return false;"><span>${item.word}</span><span class="count-badge">${item.count}</span></div>`;
+            });
+            
+            listEl.innerHTML = html;
+
+            if (animate) {
+                // --- 【关键逻辑新增】 ---
+                // 在计算可见性之前，先强制跳转到目标位置
+                // 使用 behavior: 'auto' 进行瞬间跳转，这样用户感觉像是“直接在这个位置刷新出来了”
+                if (jumpToWord) {
+                    const targetEl = listEl.querySelector(`[data-w="${jumpToWord.replace(/'/g, "\\'")}"]`);
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ block: 'center', behavior: 'auto' });
+                    }
+                }
+                // -----------------------
+
+                // 强制重排
+                void listEl.offsetWidth;
+
+                const listRect = listEl.getBoundingClientRect();
+                const allItems = listEl.querySelectorAll('.l-item');
+                const visibleItems = [];
+
+                // 重新筛选可见元素（此时已经是跳转后的位置了）
+                allItems.forEach(item => {
+                    const rect = item.getBoundingClientRect();
+                    if (rect.top < listRect.bottom && rect.bottom > listRect.top) {
+                        visibleItems.push(item);
+                    } else {
+                        item.style.opacity = '1'; // 屏幕外的直接显示
+                    }
+                });
+
+                // 播放瀑布流动画
+                const totalDuration = 0.5; 
+                const step = visibleItems.length > 0 ? totalDuration / visibleItems.length : 0;
+
+                visibleItems.forEach((item, i) => {
+                    item.style.animationDelay = `${i * step}s`;
+                    item.classList.add('list-entry-anim');
+                });
+
+                // 动画结束清理
+                const cleanupDelay = (totalDuration * 1000) + 500;
+                renderCleanupTimer = setTimeout(() => {
+                    visibleItems.forEach(el => {
+                        el.classList.remove('list-entry-anim');
+                        el.style.opacity = '1';
+                        el.style.animationDelay = '';
+                    });
+                    renderCleanupTimer = null; 
+                }, cleanupDelay);
+            }
+        }
+
+        function exportUnknownWords() {
+            if(!currentRemovedSet) return;
+            const activeWords = currentUnknownData.filter(item => !currentRemovedSet.has(item.word));
+            if (activeWords.length === 0) return showToast('列表为空，无法导出', 'warn');
+            const textContent = activeWords.map(item => item.word).join('\n');
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'unknown_words.txt';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            showToast(`已导出 ${activeWords.length} 个单词`, 'success');
+        }
+
+        // --- 新增：新建空白 Tab 功能 ---
+        let newDocCounter = 1;
+
+        function createNewTab() {
+            // 1. 构造新的文件对象
+            // 命名逻辑：New Document 1, New Document 2...
+            const name = `Tab ${newDocCounter++}`;
+            const newFile = {
+                id: Date.now() + Math.random(), // 确保 ID 唯一
+                name: name,
+                content: '',
+                rawHtml: '', // 初始为空
+                wordCount: 0,
+                analysisResults: [],
+                removedSet: new Set(),
+                manualSet: new Set(),
+                scrollPos: 0
+            };
+
+            // 2. 推入文件系统
+            fileSystem.push(newFile);
+            
+            // 3. 更新激活索引到最新（即最后一个）
+            activeFileIndex = fileSystem.length - 1;
+
+            // 4. 更新 UI
+            // 如果之前是空状态，需要显示 Tab 栏并展开顶部导航
+            if (fileSystem.length === 1) {
+                renderTabs(); // 先渲染 Tab
+                // 强制触发一次 switchTab 以便初始化 UI 状态
+                switchTab(0);
+            } else {
+                renderTabs();
+                switchTab(activeFileIndex);
+            }
+
+            // 5. 更新状态栏文本
+            document.getElementById('statusText').innerHTML = `<span class="sub-name">已创建</span><span class="sub-info">${name}</span>`;
+
+            // 6. 体验优化：自动进入编辑模式并聚焦
+            // switchTab 默认会关闭编辑模式，所以我们需要在它之后再次开启
+            setTimeout(() => {
+                toggleEditMode(true); 
+                showToast(`已创建空白页`, 'success');
+                // 尝试聚焦编辑器
+                editor.focus();
+            }, 50);
+
+            // 7. 更新按钮状态 (Run 按钮等)
+            updateBtnState();
+        }
+
+        // --- POPUP LOGIC ---
+        window.onWordClick = function(e, el) {
+            const w = el.getAttribute('data-w');
+            if (currentRemovedSet && currentRemovedSet.has(w)) return;
+            if (el.classList.contains('focus')) {
+                const existing = document.querySelector('.syn-popup');
+                if (existing && !existing.classList.contains('closing')) {
+                    if (existing.dataset.mode === 'synonyms') showTranslation(el, w);
+                    else showSynonyms(el, w);
+                } else { showSynonyms(el, w); }
+            } else {
+                const all = document.querySelectorAll(`.m-word[data-w="${w.replace(/'/g, "\\'")}"]`);
+                const idx = Array.from(all).indexOf(el);
+                highlightLogic(w, idx, all);
+                preloadWordData(w);
+                closeSynonyms();
+            }
+        }
+
+        // NEW: Helper to trigger the specific pulse animation for focused words
+        function triggerWordPulse(el) {
+            el.classList.remove('click-anim');
+            void el.offsetWidth; // Force Reflow
+            el.classList.add('click-anim');
+            setTimeout(() => el.classList.remove('click-anim'), 250);
+        }
+
+        let popupAnimTimer = null;
+
+        async function switchContent(popup, newHtml, mode, rect, direction) {
+            popup.dataset.mode = mode;
+
+            if (popupAnimTimer) {
+                clearTimeout(popupAnimTimer);
+                popupAnimTimer = null;
+            }
+
+            popup.style.height = popup.offsetHeight + 'px';
+            popup.style.overflow = 'hidden';
+
+            let container = popup.querySelector('.anim-wrapper');
+            
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'anim-wrapper';
+                
+                const oldView = document.createElement('div');
+                oldView.className = 'view-old';
+                while (popup.firstChild) oldView.appendChild(popup.firstChild);
+                
+                container.appendChild(oldView);
+                popup.appendChild(container);
+            } else {
+                const currentNew = container.querySelector('.view-new');
+                const currentOld = container.querySelector('.view-old');
+
+                if (currentNew) {
+                    currentNew.className = 'view-old';
+                    currentNew.style.transition = 'none'; 
+                    currentNew.style.transform = 'translateX(0)';
+                    currentNew.style.opacity = '1';
+                    if (currentOld) currentOld.remove();
+                }
+            }
+
+            const ghost = popup.cloneNode(false);
+            ghost.className = 'syn-popup';
+            ghost.style.visibility = 'hidden';
+            ghost.style.position = 'fixed';
+            ghost.style.top = '-9999px';
+            ghost.style.left = '-9999px';
+            ghost.style.height = 'auto'; 
+            ghost.style.width = '300px'; 
+            ghost.style.transition = 'none';
+            ghost.innerHTML = newHtml;
+            document.body.appendChild(ghost);
+            const targetHeight = ghost.offsetHeight;
+            document.body.removeChild(ghost);
+
+            const newView = document.createElement('div');
+            newView.className = 'view-new';
+            newView.innerHTML = newHtml;
+            newView.style.opacity = '0';
+            newView.style.transform = direction === 'forward' ? 'translateX(40px)' : 'translateX(-40px)';
+            container.appendChild(newView);
+
+            void popup.offsetWidth;
+
+            updatePopupPosition(popup, rect, true, targetHeight);
+
+            const activeOld = container.querySelector('.view-old');
+            if (activeOld) {
+                activeOld.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.25s ease';
+                activeOld.style.opacity = '0';
+                activeOld.style.transform = direction === 'forward' ? 'translateX(-40px)' : 'translateX(40px)';
+            }
+
+            newView.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.25s ease';
+            newView.style.opacity = '1';
+            newView.style.transform = 'translateX(0)';
+
+            popupAnimTimer = setTimeout(() => {
+                if (document.body.contains(popup)) {
+                    popup.innerHTML = newHtml;
+                    popup.style.height = ''; 
+                    popup.style.overflow = '';
+                }
+                popupAnimTimer = null;
+            }, 260); 
+        }
+
+        async function showSynonyms(el, word) {
+            const rect = el.getBoundingClientRect();
+            let popup = document.querySelector('.syn-popup:not(.closing)');
+            const cached = synonymCache.get(word);
+            
+            const buildHtml = (data) => {
+                let body = '';
+                if (!data) body = `<div class="syn-loading"><span>Finding words...</span></div>`;
+                else if (data.length === 0) body = `<div class="syn-empty">No similar words found.</div>`;
+                else {
+                    body = `<div class="syn-content" style="margin-top:10px">` + 
+                           data.slice(0, 8).map(w => `<div class="syn-tag">${w}</div>`).join('') + 
+                           `</div>`;
+                }
+                return `<div class="syn-header"><span>Similar in Word List</span></div>${body}`;
+            };
+
+            if (popup) {
+                if (popup.dataset.mode === 'synonyms' && cached) return; 
+                await switchContent(popup, buildHtml(cached), 'synonyms', rect, 'backward');
+            } else {
+                closeAllMenus();
+                popup = document.createElement('div');
+                popup.className = 'syn-popup';
+                popup.dataset.mode = 'synonyms';
+                popup.innerHTML = buildHtml(cached);
+                popup.style.visibility = 'hidden';
+                document.body.appendChild(popup);
+                updatePopupPosition(popup, rect);
+                popup.style.visibility = 'visible';
+                requestAnimationFrame(() => popup.classList.add('animate-in'));
+            }
+
+            if (!cached) {
+                try {
+                    const res = await fetch(`https://api.datamuse.com/words?ml=${word}&max=30`);
+                    if(!res.ok) throw new Error();
+                    const data = await res.json();
+                    const matched = data.filter(item => isWordKnown(item.word)).map(item => item.word);
+                    synonymCache.set(word, matched);
+                    if(popup.dataset.mode === 'synonyms' && !popup.querySelector('.anim-wrapper')) {
+                        popup.innerHTML = buildHtml(matched);
+                        updatePopupPosition(popup, rect, true);
+                    }
+                } catch (e) {
+                    if(popup.dataset.mode === 'synonyms') popup.innerHTML = `<div class="syn-header"><span>Similar</span></div><div class="syn-loading"><span style="color:#e74c3c">Error</span></div>`;
+                }
+            }
+        }
+
+        async function showTranslation(el, word) {
+            const rect = el.getBoundingClientRect();
+            let popup = document.querySelector('.syn-popup:not(.closing)');
+            if(!popup) return;
+
+            const cached = translationCache.get(word);
+
+            const buildHtml = (json) => {
+                let body = '';
+                if(!json) body = `<div class="syn-loading"><span>Loading definition...</span></div>`;
+                else if(json.data) {
+                    let ph = '';
+                    if (json.data.ukphone || json.data.usphone) {
+                        ph = `<div class="phonetic-row">
+                            ${json.data.ukphone ? `<span><b>英</b>/${json.data.ukphone}/</span>` : ''}
+                            ${json.data.usphone ? `<span><b>美</b>/${json.data.usphone}/</span>` : ''}
+                        </div>`;
+                    }
+                    let defs = '';
+                    if (json.data.translations && Array.isArray(json.data.translations)) {
+                        defs = `<div class="trans-grid">` + 
+                               json.data.translations.map(t => `<span class="trans-tag">${t.pos}.</span><span class="trans-text">${t.tran_cn}</span>`).join('') + 
+                               `</div>`;
+                    } else if (json.data.translation) {
+                        defs = `<div class="trans-text" style="margin-top:5px">${json.data.translation}</div>`;
+                    }
+                    body = `<div style="margin-top:10px">${ph}${defs}</div>`;
+                } else {
+                    body = `<div class="syn-empty">No definition found.</div>`;
+                }
+                
+                return `<div class="syn-header" style="text-transform: none; letter-spacing: 0; font-size: 15px;"><span>${word}</span></div>${body}`;
+            };
+
+            await switchContent(popup, buildHtml(cached), 'translation', rect, 'forward');
+
+            if (!cached) {
+                try {
+                    const res = await fetch(`https://v2.xxapi.cn/api/englishwords?word=${word}`);
+                    if(!res.ok) throw new Error();
+                    const json = await res.json();
+                    translationCache.set(word, json);
+                    if(popup.dataset.mode === 'translation' && !popup.querySelector('.anim-wrapper')) {
+                        popup.innerHTML = buildHtml(json);
+                        updatePopupPosition(popup, rect, true);
+                    }
+                } catch (e) {
+                    if(popup.dataset.mode === 'translation') {
+                        popup.innerHTML = `<div class="syn-header" style="text-transform: none; letter-spacing: 0; font-size: 15px;"><span>${word}</span></div><div class="syn-loading"><span style="color:#e74c3c">Not Found</span></div>`;
+                    }
+                }
+            }
+        }
+
+        function updatePopupPosition(popup, rect, isUpdate = false, targetHeight = null) {
+            // --- 配置区域 ---
+            const gap = 10;          // 垂直间距 (保持原样)
+            
+            // [关键修改点]：向左修正的距离 (像素)
+            // 数字越大，弹窗越往左移
+            const manualOffsetX = 10; 
+            // ----------------
+
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            
+            let h = targetHeight !== null ? targetHeight : popup.offsetHeight;
+            let w = 300; 
+
+            const spaceBelow = viewportHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            let top, left, maxH = '';
+
+            // [逻辑修改]：计算左边位置，并减去修正值
+            left = rect.left - manualOffsetX;
+
+            // --- 边缘检测 (必须放在计算之后) ---
+            // 1. 防止超出右边界
+            if (left + w > viewportWidth) {
+                left = viewportWidth - w - 10;
+            }
+            // 2. 防止超出左边界 (如果减太多，变成负数，强制拉回屏幕内)
+            if (left < 10) left = 10;
+
+            // --- 垂直位置判断 (保持不变) ---
+            let placeAbove = false;
+            if (isUpdate && popup.dataset.pos === 'top') {
+                if (rect.top - h - gap > 0) placeAbove = true;
+            } else if (spaceBelow < h + gap && spaceAbove > spaceBelow) {
+                placeAbove = true;
+            }
+
+            if (placeAbove) {
+                top = rect.top - h - gap;
+                popup.dataset.pos = 'top';
+                if (top < 10) { top = 10; maxH = (rect.top - gap - 10) + 'px'; }
+            } else {
+                top = rect.bottom + gap;
+                popup.dataset.pos = 'bottom';
+                if (top + h > viewportHeight) { maxH = (viewportHeight - top - 10) + 'px'; }
+            }
+
+            // --- 应用样式 ---
+            if (targetHeight !== null) popup.style.height = targetHeight + 'px';
+            popup.style.top = top + 'px';
+            popup.style.left = left + 'px';
+            
+            if (maxH) popup.style.maxHeight = maxH; 
+            else popup.style.maxHeight = '320px'; 
+        }
+
+        function closeSynonyms() {
+            if (popupAnimTimer) {
+                clearTimeout(popupAnimTimer);
+                popupAnimTimer = null;
+            }
+            document.querySelectorAll('.syn-popup:not(.closing)').forEach(p => {
+                p.classList.remove('animate-in'); 
+                p.classList.add('closing');
+                setTimeout(() => p.remove(), 150);
+            });
+        }
+
+        window.locateWord = function(w, triggerPulse = true) {
+            closeSynonyms();
+            if (currentRemovedSet && currentRemovedSet.has(w)) return showToast('该词已被移除', 'warn');
+            const safeSelector = w.replace(/'/g, "\\'");
+            const all = document.querySelectorAll(`.m-word[data-w="${safeSelector}"]`);
+            if (all.length === 0) return showToast('当前文本中未找到该词', 'warn');
+            let nextIdx = 0;
+            const currentFocus = document.querySelector(`.m-word[data-w="${safeSelector}"].focus`);
+            if (currentFocus) { const i = Array.from(all).indexOf(currentFocus); nextIdx = (i + 1) % all.length; }
+            highlightLogic(w, nextIdx, all);
+            if(triggerPulse && all[nextIdx]) triggerWordPulse(all[nextIdx]);
+        }
+
+        function highlightLogic(w, fIdx, all) {
+            document.querySelectorAll('.m-word').forEach(e => e.classList.remove('focus', 'group'));
+            document.querySelectorAll('.l-item').forEach(e => e.classList.remove('active'));
+            document.querySelectorAll('.l-item').forEach(item => {
+                const itemW = item.getAttribute('data-w'); const data = currentUnknownData.find(d => d.word === itemW);
+                if(data) item.querySelector('.count-badge').textContent = data.count;
+            });
+            all.forEach(s => s.classList.add('group'));
+            
+            // 左侧阅读视图滚动 (保持原有平滑)
+            if(all[fIdx]) { 
+                all[fIdx].classList.add('focus'); 
+                all[fIdx].scrollIntoView({ block: 'center', behavior: 'smooth' }); 
+            }
+            
+            const activeItem = Array.from(document.querySelectorAll('.l-item')).find(item => item.getAttribute('data-w') === w);
+            if(activeItem) { 
+                activeItem.classList.add('active'); 
+                
+                // --- 修改了下面这一行 ---
+                // 将 block: 'nearest' 改为 'center' (居中显示)，并添加 behavior: 'smooth' (平滑滚动)
+                activeItem.scrollIntoView({ block: 'center', behavior: 'smooth' }); 
+                // -----------------------
+                
+                activeItem.querySelector('.count-badge').textContent = `${fIdx + 1}/${all.length}`; 
+            }
+        }
+
+        function closeAllMenus() {
+            document.querySelectorAll('.ctx-menu:not(.closing)').forEach(m => { m.classList.remove('animate-in'); m.classList.add('closing'); setTimeout(() => m.remove(), 150); });
+        }
+        
+        window.openCtx = function(e, w) {
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            closeAllMenus(); 
+            closeSynonyms();
+
+            const isRm = currentRemovedSet && currentRemovedSet.has(w);
+            const menu = document.createElement('div'); 
+            menu.className = 'ctx-menu';
+            menu.innerHTML = `<button class="ctx-item" onclick="execCtxAction('${w.replace(/'/g, "\\'")}')">${isRm ? `<span style="color:#2E7D32">恢复 ${w}</span>` : `<span style="color:#C62828">移除 ${w}</span>`}</button>`;
+            
+            menu.style.visibility = 'hidden';
+            document.body.appendChild(menu);
+            
+            const rect = menu.getBoundingClientRect();
+            const winWidth = window.innerWidth;
+            const winHeight = window.innerHeight;
+            
+            let x = e.clientX;
+            let y = e.clientY;
+
+            if (x + rect.width > winWidth) {
+                x -= rect.width;
+            }
+
+            let originY = 'top'; 
+            if (y + rect.height > winHeight) {
+                y -= rect.height;
+                originY = 'bottom';
+            }
+
+            menu.style.left = x + 'px'; 
+            menu.style.top = y + 'px';
+            menu.style.visibility = 'visible';
+
+            const originX = (x === e.clientX) ? 'left' : 'right';
+            menu.style.transformOrigin = `${originY} ${originX}`;
+
+            requestAnimationFrame(() => menu.classList.add('animate-in'));
+        }
+
+        window.execCtxAction = function(w) {
+            if (!w || !currentRemovedSet) return;
+            const isRestoring = currentRemovedSet.has(w);
+            const safeSelector = w.replace(/'/g, "\\'");
+            if (isRestoring) {
+                currentRemovedSet.delete(w); showToast(`已恢复 ${w}`, 'success');
+                const spans = document.querySelectorAll(`.m-word[data-w="${safeSelector}"]`);
+                spans.forEach(el => { el.classList.remove('removed'); void el.offsetWidth; el.classList.add('animate-in'); setTimeout(() => el.classList.remove('animate-in'), 600); });
+            } else {
+                currentRemovedSet.add(w); showToast(`已移除 ${w}`, 'info');
+                document.querySelectorAll(`.m-word[data-w="${safeSelector}"]`).forEach(el => { el.classList.add('removed'); });
+            }
+            closeAllMenus(); renderList();
+        }
+
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.ctx-menu')) closeAllMenus();
+            if (!e.target.closest('.syn-popup') && !e.target.closest('.m-word')) closeSynonyms();
+            if (!e.target.closest('.m-word') && !e.target.closest('.l-item')) {
+                 document.querySelectorAll('.m-word.focus').forEach(el => el.classList.remove('focus'));
+                 document.querySelectorAll('.l-item.active').forEach(el => el.classList.remove('active'));
+            }
+        });
+        document.addEventListener('scroll', (e) => { 
+            // 如果滚动源是右侧列表(.list-body)或左侧导航(.nav-scroll-content)，则忽略，不关闭弹窗
+            if (e.target.classList && (e.target.classList.contains('list-body') || e.target.classList.contains('nav-scroll-content'))) {
+                return;
+            }
+            // 只有当编辑器或主页面滚动时，才关闭弹窗
+            if(document.querySelector('.syn-popup')) closeSynonyms(); 
+        }, true);
+
+        const toastContainer = document.getElementById('toast-container');
+        function showToast(msg, type='info') {
+            const el = document.createElement('div'); el.className = `toast-item ${type}`; el.innerHTML = `<span>${msg}</span>`;
+            el.onmouseenter = () => removeToast(el); toastContainer.appendChild(el); void el.offsetWidth; el.classList.add('show'); setTimeout(() => removeToast(el), 3500);
+        }
+        function removeToast(el) {
+            if(!el.parentElement || el.classList.contains('hiding')) return;
+            el.classList.add('hiding'); setTimeout(() => { if (el.parentElement) el.remove(); }, 400); 
+        }
+        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        async function copyResult() {
+            if (!editor.innerText.trim()) return showToast('未复制到内容', 'warn');
+            const clone = editor.cloneNode(true);
+            clone.querySelectorAll('.m-word.removed').forEach(el => { const textNode = document.createTextNode(el.innerText); el.replaceWith(textNode); });
+            clone.querySelectorAll('.m-word').forEach(el => { const b = document.createElement('b'); b.innerText = el.innerText; b.style.fontWeight = 'bold'; b.style.color = '#000'; el.replaceWith(b); });
+            const finalHtml = `<div style="white-space: pre-wrap; font-family: sans-serif; line-height: 1.6;">${clone.innerHTML}</div>`;
+            const plainText = clone.innerText;
+            try {
+                if (navigator.clipboard && navigator.clipboard.write) {
+                    const blobHtml = new Blob([finalHtml], { type: 'text/html' }); const blobText = new Blob([plainText], { type: 'text/plain' });
+                    const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
+                    await navigator.clipboard.write(data); showToast('已复制', 'success');
+                } else { throw new Error('Clipboard API unavailable'); }
+            } catch (err) {
+                try {
+                    const staging = document.createElement('div'); staging.innerHTML = finalHtml; staging.style.position = 'fixed'; staging.style.left = '0'; staging.style.top = '0'; staging.style.opacity = '0'; staging.style.pointerEvents = 'none'; staging.style.zIndex = '-1'; staging.contentEditable = true; 
+                    document.body.appendChild(staging); const range = document.createRange(); range.selectNodeContents(staging); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+                    const successful = document.execCommand('copy'); document.body.removeChild(staging); sel.removeAllRanges();
+                    if (successful) showToast('已复制', 'success'); else showToast('复制失败', 'error');
+                } catch (fallbackErr) { showToast('复制出错，请手动复制', 'error'); }
+            }
+        }
+        // ==========================================
+        //  Global Shortcut: Ctrl+V to New Tab
+        // ==========================================
+        document.addEventListener('paste', (e) => {
+            // 1. 检查焦点状态：
+            // 如果焦点在 Input、Textarea 或 当前处于编辑模式的元素内，则允许默认粘贴，不触发新建
+            const activeEl = document.activeElement;
+            const isInput = activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA';
+            const isEditorEditing = editor.isContentEditable && editor.contains(e.target);
+
+            if (isInput || isEditorEditing) return;
+
+            // 2. 获取剪贴板文本
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            if (!text || !text.trim()) return;
+
+            e.preventDefault(); // 阻止默认行为
+
+            // 3. 执行新建空白页流程
+            createNewTab();
+
+            // 4. 将文本注入到刚刚创建的新文件中
+            // createNewTab() 执行后，activeFileIndex 指向的是最新的文件
+            const currentFile = fileSystem[activeFileIndex];
+            
+            if (currentFile) {
+                // 更新数据模型
+                currentFile.content = text;
+                currentFile.wordCount = countWords(text);
+                
+                // 更新视图层 (createNewTab 默认开启了编辑模式，我们可以直接赋值)
+                editor.innerText = text; 
+                
+                // 更新统计信息
+                totalStats.textContent = `${currentFile.wordCount} Words`;
+                
+                // 触发后台预加载和按钮状态更新
+                triggerBackgroundPreload(text);
+                updateBtnState();
+
+                showToast('已新建标签页并粘贴文本', 'success');
+            }
+        });
+    </script>
+</body>
+</html>
