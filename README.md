@@ -50,7 +50,7 @@
 >[!NOTE]
 > 选中后的超纲词其列表右侧的数字显示格式为：`选中词的序号/总次数”`。
 
-* 可随时点击 `超纲词列表栏` 中的 <img src="./icons/toolbar-sort.svg" height="15"> 来切换列表排序。设有以下三种排序方式：
+* 可随时点击 `超纲词列表栏` 中的 <kbd><img src="./icons/toolbar-sort.svg" height="15"></kbd> 来切换列表排序。设有以下三种排序方式：
 
 <div align="center">
 
@@ -80,7 +80,7 @@
 >线上词典API：https://v2.xxapi.cn/api/englishwords
 
 ## 手动编辑
-* 点击 `阅读视图栏` 右侧的 <img src="./icons/toolbar-edit.svg" height="15"> 可启用 `编辑模式`，编辑 `阅读视图` 中的文本。
+* 点击 `阅读视图栏` 右侧的 <kbd><img src="./icons/toolbar-edit.svg" height="15"></kbd> 可启用 `编辑模式`，编辑 `阅读视图` 中的文本。
 * 点击 `超纲词列表栏` 右侧的 <kbd><img src="./icons/toolbar-add.svg" height="15"> 添加</kbd> 可手动添加超纲词。
 
 >[!TIP]
