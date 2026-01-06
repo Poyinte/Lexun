@@ -81,7 +81,7 @@
 
 ## 手动编辑
 * 点击 `阅读视图栏` 右侧的 <img src="./icons/toolbar-edit.svg" height="15"> 可启用 `编辑模式`，编辑阅读视图中的文本。
-* 点击 `超纲词栏` 右侧的 <img src="./icons/toolbar-add.svg" height="15"> <kbd>添加</kbd> 可手动添加超纲词。
+* 点击 `超纲词列表栏` 右侧的 <img src="./icons/toolbar-add.svg" height="15"> <kbd>添加</kbd> 可手动添加超纲词。
 
 >[!TIP]
 > 可使用快捷键 <kbd>Enter</kbd> 添加超纲词。
