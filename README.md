@@ -4,7 +4,7 @@
 
 ## 导入单词表
 
-* 点击左侧栏 <img src="./icons/sidebar-import-list.svg" height="15"> <kbd>导入单词表</kbdb，选择 `.txt` 单词表文件。
+* 点击左侧栏 <img src="./icons/sidebar-import-list.svg" height="15"> <kbd>导入单词表</kbd>，选择 `.txt` 单词表文件。
 
 >[!NOTE]
 > 单词表文件格式为 `一行一词`。
