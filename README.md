@@ -5,7 +5,7 @@
 
 面向中国英语学习者的超纲词标注工具
 <br>
-<sub>Powered by <code><img src="./icons/gemini.svg" height="12" align="center"> Gemini</code> </sub>
+<sub>Powered by <code><img src="./icons/gemini.svg" height="12" align="center"> <a href="https://gemini.google.com/" target="_blank">Gemini</a></code></sub>
 </div>
 
 <div align="right">
@@ -24,7 +24,7 @@
 ## 导入单词表
 
 * 点击左侧栏 <kbd><img src="./icons/sidebar-import-list.svg" height="15" align="center"> 导入单词表</kbd>，选择 `.txt` 单词表文件。
-
+  
 >[!NOTE]
 > 单词表文件格式为 `一行一词`。
 
