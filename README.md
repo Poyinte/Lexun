@@ -127,7 +127,7 @@
 |`在线词典查询`|[英语单词详解 - 免费API](https://v2.xxapi.cn/api/englishwords)|
 |`不规则动词映射表`|[English irregular verbs - Wikipedia](https://en.wikipedia.org/wiki/English_irregular_verbs#List)|
 
-## 用户界面资源
+## 图形资源
 | 用　　途 |使　　　用　　　资　　　源|
 | :----------: | -----------|
 |`标识字体`|[glow-sans: SHSans-derived CJK font family with a more concise & modern look.](https://github.com/welai/glow-sans?tab=readme-ov-file)|
