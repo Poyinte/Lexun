@@ -50,7 +50,7 @@
 >[!NOTE]
 > 选中后的超纲词其列表右侧的数字显示格式为：`选中词的序号/总次数`。
 
-* 可随时点击 `超纲词列表栏` 中的 <kbd><img src="./icons/toolbar-sort.svg" height="15" align="center"></kbd> 来切换列表排序。设有以下三种排序方式：
+* 可随时点击 `超纲词列表栏` 右侧的 <kbd><img src="./icons/toolbar-sort.svg" height="15" align="center"></kbd> 来切换列表排序。设有以下三种排序方式：
 
 <div align="center">
 
