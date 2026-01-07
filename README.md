@@ -131,4 +131,4 @@
 | 用　　途 |使　　　用　　　资　　　源|
 | :----------: | -----------|
 |`标识字体`|[glow-sans: SHSans-derived CJK font family with a more concise & modern look.](https://github.com/welai/glow-sans?tab=readme-ov-file)|
-|`用户界面图标`|[lucide: Beautiful & consistent icon toolkit made by the community. Open-source project and a fork of Feather Icons.](https://github.com/lucide-icons/lucide?tab=readme-ov-file) |
+|`用户界面图标`|[lucide: Beautiful & consistent icon toolkit made by the community.](https://github.com/lucide-icons/lucide?tab=readme-ov-file) |
