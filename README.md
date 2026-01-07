@@ -98,9 +98,6 @@
 
 </div>
 
->[!NOTE]
->线上词典 `API`：https://v2.xxapi.cn/api/englishwords
-
 ## 手动编辑
 * 点击 `阅读视图栏` 右侧的 <kbd><img src="./icons/toolbar-edit.svg" height="15" align="center"></kbd> 可启用 `编辑模式`，编辑 `阅读视图` 中的文本。
 * 点击 `超纲词列表栏` 右侧的 <kbd><img src="./icons/toolbar-add.svg" height="15" align="center"> 添加</kbd> 可手动添加超纲词。
@@ -118,4 +115,14 @@
 # 隐私与安全
 
 >[!IMPORTANT]
-> 除 `词典学习窗口` 需联网调用 `API` 外，其余功能均在本地离线运行，数据不会上传至任何服务器。
+> 除 `学习窗口` 需联网调用 `API` 外，其余功能均在本地离线运行，数据不会上传至任何服务器。
+
+# 使用资源
+
+## 自然语言资源
+| 功　　能 |使　　　用　　　资　　　源|
+| :----------: | -----------|
+|`自然语言处理`|[compromise: modest natural-language processing](https://github.com/spencermountain/compromise)|
+|`相关词处理`|[Datamuse API](https://www.datamuse.com/api/) |
+|`在线词典查询`|[英语单词详解 - 免费API](https://v2.xxapi.cn/api/englishwords)|
+|`不规则动词映射表`|[English irregular verbs - Wikipedia](https://en.wikipedia.org/wiki/English_irregular_verbs#List)|
