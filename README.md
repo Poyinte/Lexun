@@ -50,7 +50,7 @@
 |对应考试|来　　　　　　源|`.txt` 文件|
 | :----------: | ---------- | -----------|
 |`考　研`| [《考研英语必备手册：大纲词汇 5500》](https://pdc.capub.cn/search.html#/detail?id=nsinuzstdilibzptpxrwgqdnu6xukdltdr2b7xw7vfsgoa5hwqwaocg5yycskvsiv6sikfilh3yea&from=1&type=cip) | [![KaoYan](https://img.shields.io/badge/-KaoYan.txt-084c91?style=flat-square&logo=googledocs&logoColor=white)](https://github.com/Poyinte/Lexun/releases/download/v1.0.0/KaoYan.txt) |
-|`专四专八`| [![Data](https://img.shields.io/badge/mahavivo-english_wordlists-black?style=flat-square&logo=github)](https://github.com/mahavivo/english-wordlists)[英语专业四八级词汇表](https://github.com/mahavivo/english-wordlists/blob/master/英语专业四八级词汇表.txt#L12815) | [![TEM8](https://img.shields.io/badge/-TEM8.txt-084c91?style=flat-square&logo=googledocs&logoColor=white)](https://github.com/Poyinte/Lexun/releases/download/v1.0.0/TEM8.txt) |
+|`专四专八`|<a href="https://github.com/mahavivo/english-wordlists"><img src="https://img.shields.io/badge/mahavivo-english_wordlists-black?style=flat-square&logo=github" align="absmiddle"></a> [英语专业四八级词汇表](https://github.com/mahavivo/english-wordlists/blob/master/英语专业四八级词汇表.txt#L12815) | [![TEM8](https://img.shields.io/badge/-TEM8.txt-084c91?style=flat-square&logo=googledocs&logoColor=white)](https://github.com/Poyinte/Lexun/releases/download/v1.0.0/TEM8.txt) |
 
 </div>
 
