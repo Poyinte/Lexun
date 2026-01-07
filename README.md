@@ -5,9 +5,12 @@
 
 面向中国英语学习者的超纲词标注工具
 <br>
-<sub>Powered by <code><img src="./icons/gemini.svg" height="12" align="center"> <a href="https://gemini.google.com/" target="_blank">Gemini</a></code></sub>
+<sub>Powered by <code><img src="./icons/gemini.svg" height="12" align="center"> Gemini</code></sub>
+
+[![下载](https://img.shields.io/badge/下载-离线网页-0e7ff1?style=flat-square&logo=googlechrome&logoColor=white)](https://github.com/Poyinte/Lexun/raw/main/index.html) [![访问](https://img.shields.io/badge/访问-线上网页-084c91?style=flat-square&logo=github)](https://poyinte.github.io/Lexun/)
 </div>
 
+<br><br>
 <div align="right">
   
  [![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
