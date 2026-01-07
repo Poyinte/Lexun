@@ -27,9 +27,7 @@
 
 ---
 
-<img src="./icons/rocket.svg" height="300">
-
-# 快速使用
+# <img src="./icons/rocket.svg" height="30"> 快速使用
 
 ## 导入单词表
 
@@ -119,14 +117,14 @@
 * 点击左侧栏 <kbd><img src="./icons/sidebar-copy.svg" height="15" align="center"> 复制标注结果</kbd>，可复制带有标注的文本<sup> `标注词会被加粗`</sup>。
 * 点击左侧栏 <kbd><img src="./icons/sidebar-export.svg" height="15" align="center"> 导出超纲词列表</kbd>，可生成 `一行一词` 格式的 `.txt` 超纲词列表文件。
 
-# 隐私与安全
+# <img src="./icons/shield-check.svg" height="30"> 隐私与安全
 
 >[!IMPORTANT]
 > 除 `学习窗口` 需联网调用 `API` 外，其余功能均在本地离线运行，数据不会上传至任何服务器。
 
 # 使用资源
 
-## 自然语言资源
+## <img src="./icons/layers.svg" height="30"> 自然语言资源
 | 用　　途 |使　　　用　　　资　　　源|
 | :----------: | -----------|
 |`自然语言处理`|[compromise: modest natural-language processing](https://github.com/spencermountain/compromise)|
