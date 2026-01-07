@@ -1,3 +1,9 @@
+<div align="left">
+ 
+  [![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
+
+</div>
+<br>
 <div align="center">
 <p>
 <img src="./icons/title.svg" height="150" align="center">
@@ -9,13 +15,11 @@
 
 [![下载](https://img.shields.io/badge/下载-离线网页-0e7ff1?style=flat-square&logo=googlechrome&logoColor=white)](https://github.com/Poyinte/Lexun/raw/main/index.html) [![访问](https://img.shields.io/badge/访问-线上网页-084c91?style=flat-square&logo=github)](https://poyinte.github.io/Lexun/)
 </div>
-
 <br><br>
 <div align="right">
-  
- [![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
- <br>
- <sub>* 标注结果可能存在错漏。投入使用前请进行人工核对。</sub>
+<sub>* 标注结果可能存在错漏。投入使用前请进行人工核对。</sub><br>
+<sub>** 线上网页为部署在 <code>GitHub Pages</code> 上的静态网页。<br>
+  除 <code>学习窗口</code> 外，其余功能均在本地离线运行，数据不会上传至任何服务器。</sub>
 </div>
 
 [cc-by-nc-sa]: http://creativecommons.org/licenses/by-nc-sa/4.0/
@@ -128,7 +132,7 @@
 |`不规则动词映射表`|[English irregular verbs - Wikipedia](https://en.wikipedia.org/wiki/English_irregular_verbs#List)|
 
 ## 图形资源
-| 用　　途 |使　　　用　　　资　　　源|
+| 用　　途 |使　　　　用　　　　资　　　　源|
 | :----------: | -----------|
 |`标识字体`|[glow-sans: SHSans-derived CJK font family with a more concise & modern look.](https://github.com/welai/glow-sans?tab=readme-ov-file)|
 |`用户界面图标`|[lucide: Beautiful & consistent icon toolkit made by the community.](https://github.com/lucide-icons/lucide?tab=readme-ov-file) |
