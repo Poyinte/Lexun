@@ -13,7 +13,7 @@
 <br>
 <sub>Powered by <code><img src="./icons/gemini.svg" height="12" align="center"> Gemini</code></sub>
 
-[![下载](https://img.shields.io/badge/下载-离线网页-0e7ff1?style=flat-square&logo=googlechrome&logoColor=white)](https://github.com/Poyinte/Lexun/raw/main/index.html) [![访问](https://img.shields.io/badge/访问-线上网页-084c91?style=flat-square&logo=github)](https://poyinte.github.io/Lexun/)
+[![下载](https://img.shields.io/badge/下载-离线网页-0e7ff1?style=flat-square&logo=googlechrome&logoColor=white)](https://github.com/Poyinte/Lexun/releases/download/v1.0.0/Lexun.html) [![访问](https://img.shields.io/badge/访问-线上网页-084c91?style=flat-square&logo=github)](https://poyinte.github.io/Lexun/)
 </div>
 <br><br>
 <div align="right">
@@ -44,8 +44,8 @@
 
 | 单　　　词　　　表 |`.txt` 文件|
 | ---------- | -----------|
-| [全国大学英语四、六级考试大纲<sub>（2016 年修订版）</sub>](https://cet.neea.edu.cn/res/Home/1704/55b02330ac17274664f06d9d3db8249d.pdf) | [![CET6](https://img.shields.io/badge/-CET6.txt-084c91?style=flat-square&logo=googledocs&logoColor=white)](https://github.com/Poyinte/lexun/raw/main/wordlist/CET6.txt) |
-| [普通高中英语课程标准<sub>（2017 年版 2020 年修订）</sub>](https://www.pep.com.cn/xw/zt/rjwy/gzkb2020/202205/P020220517522153664167.pdf) | [![CET6](https://img.shields.io/badge/-SeniorHigh.txt-084c91?style=flat-square&logo=googledocs&logoColor=white)](https://github.com/Poyinte/lexun/raw/main/wordlist/SeniorHigh.txt) |
+| [全国大学英语四、六级考试大纲<sub>（2016 年修订版）</sub>](https://cet.neea.edu.cn/res/Home/1704/55b02330ac17274664f06d9d3db8249d.pdf) | [![CET6](https://img.shields.io/badge/-CET6.txt-084c91?style=flat-square&logo=googledocs&logoColor=white)](https://github.com/Poyinte/Lexun/releases/download/v1.0.0/CET6.txt) |
+| [普通高中英语课程标准<sub>（2017 年版 2020 年修订）</sub>](https://www.pep.com.cn/xw/zt/rjwy/gzkb2020/202205/P020220517522153664167.pdf) | [![CET6](https://img.shields.io/badge/-SeniorHigh.txt-084c91?style=flat-square&logo=googledocs&logoColor=white)](https://github.com/Poyinte/Lexun/releases/download/v1.0.0/SeniorHigh.txt) |
 
 </div>
 
