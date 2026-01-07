@@ -77,7 +77,7 @@
 </div>
 
 >[!NOTE]
->线上词典API：https://v2.xxapi.cn/api/englishwords
+>线上词典 API：https://v2.xxapi.cn/api/englishwords
 
 ## 手动编辑
 * 点击 `阅读视图栏` 右侧的 <kbd><img src="./icons/toolbar-edit.svg" height="15" align="center"></kbd> 可启用 `编辑模式`，编辑 `阅读视图` 中的文本。
