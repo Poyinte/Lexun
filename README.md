@@ -1,8 +1,9 @@
 <div align="center">
+<p>
 <img src="./icons/title.svg" height="150" align="center">
-<br>
+</p>
 面向中国英语学习者的超纲词标注工具
-<br>
+
 </div>
 
 
