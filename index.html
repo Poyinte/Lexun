@@ -937,6 +937,7 @@
         }
 
         // --- 子函数 1：处理连字符复合词 (修复 die-hards, never-ending) ---
+        // --- 子函数 1：处理连字符复合词 (已修复：fellow-revolutionaries -> fellow-revolutionary) ---
         function handleCompoundWord(w, candidates) {
             const parts = w.split('-');
             if (parts.length < 2) return;
@@ -950,7 +951,7 @@
                 return; 
             }
 
-            // 2. 名词单数还原 (针对 die-hards)
+            // 2. 名词单数还原 (针对 die-hards, fellow-revolutionaries)
             
             // 白名单：这些词以 s 结尾但不能去 s
             const nonPlurals = new Set([
@@ -965,50 +966,75 @@
             // 条件：以s结尾，不是ss，不在白名单，长度够长
             if (lastPart.endsWith('s') && !lastPart.endsWith('ss') && !nonPlurals.has(lastPart) && lastPart.length > 3) {
                 
-                // 策略 A: 物理去 s (die-hards -> die-hard)
-                const simpleBase = lastPart.slice(0, -1);
-                const compoundSimple = parts.slice(0, -1).join('-') + '-' + simpleBase;
-                candidates.push(compoundSimple);
+                const prefix = parts.slice(0, -1).join('-') + '-';
 
-                // 策略 B: 物理去 es (match-boxes -> match-box)
-                if (lastPart.endsWith('es') && lastPart.length > 4) {
-                    const esBase = lastPart.slice(0, -2);
-                    const compoundEs = parts.slice(0, -1).join('-') + '-' + esBase;
-                    candidates.push(compoundEs);
+                // ============================================================
+                // 【核心修复】：针对 -ies 结尾的特殊处理
+                // ============================================================
+                if (lastPart.endsWith('ies') && lastPart.length > 3) {
+                    // 策略 1: -ies -> -y (revolutionaries -> revolutionary)
+                    // 这是绝大多数辅音+y的情况
+                    candidates.push(prefix + lastPart.slice(0, -3) + 'y');
+
+                    // 策略 2: -ies -> -ie (zombies -> zombie, cookies -> cookie)
+                    // 虽然 cookie 复数是 cookies，但物理去 s 得到 cookie。
+                    // zombie 复数 zombies，物理去 s 得到 zombie。
+                    // 为了保险，把去 s 的形式也加进去，反正后面有字典筛选
+                    candidates.push(prefix + lastPart.slice(0, -1));
+
+                } else {
+                    // ========================================================
+                    // 只有不是 -ies 结尾时，才执行通用的“物理去 s”
+                    // 这样就避免了 revolutionaries -> revolutionarie
+                    // ========================================================
+                    
+                    // 策略 A: 物理去 s (die-hards -> die-hard)
+                    const simpleBase = lastPart.slice(0, -1);
+                    candidates.push(prefix + simpleBase);
+    
+                    // 策略 B: 物理去 es (match-boxes -> match-box)
+                    if (lastPart.endsWith('es') && lastPart.length > 4) {
+                        const esBase = lastPart.slice(0, -2);
+                        candidates.push(prefix + esBase);
+                    }
                 }
                 
                 // 策略 C: 尝试 NLP 还原最后一部分 (dictionaries -> dictionary)
+                // 这一步作为兜底，利用 NLP 库的能力
                 const lastDoc = nlp(lastPart);
                 lastDoc.nouns().toSingular();
                 const nlpSingular = lastDoc.text().trim().toLowerCase();
                 
                 if (nlpSingular && nlpSingular !== lastPart && nlpSingular.length > 2) {
-                    const compoundNlp = parts.slice(0, -1).join('-') + '-' + nlpSingular;
+                    const compoundNlp = prefix + nlpSingular;
                     if (!candidates.includes(compoundNlp)) candidates.push(compoundNlp);
                 }
             }
         }
 
         // --- 子函数 2：处理普通单词 (修复 fully -> full, peking -> pek, shudder -> shudd) ---
+        // --- 子函数 2：处理普通单词 (已增强：增加 Compromise 二次校验兜底) ---
+        // --- 子函数 2：处理普通单词 (已更新：修复 Engels 等人名被错误去 s 的问题) ---
         function handleNormalWord(w, candidates) {
-            // 1. NLP 还原 (优先信任 Compromise.js)
-            const doc = nlp(w);
-            doc.verbs().toInfinitive();
-            doc.nouns().toSingular();
-            let lemma = doc.text().trim().toLowerCase();
-            if (lemma && lemma !== w) candidates.push(lemma);
-
+            
             // ============================================================
-            // 2.【关键修复】定义保护词表 (黑名单)
-            // 这些词虽然以 ing/er/ed 结尾，但本身就是原型，或者暴力拆解会得到错误结果
+            // 1.【关键修复】定义保护词表 (黑名单/白名单)
+            // 这些词禁止被 NLP 或手动规则“还原”，必须保持原样
             // ============================================================
             const protectedWords = new Set([
-                // ing 结尾的名词/原词
+                // --- 特殊人名/专有名词 (新增) ---
+                'engels', 'collins', 'rogers', 'adams', 'jenkins', 
+                'williams', 'jones', 'davis', 'edwards', 'evans', 
+                'harris', 'lewis', 'morris', 'sanders', 'simmons', 
+                'thomas', 'roberts', 'phillips', 'myers', 'ross',
+                'jobs', 'gates', 'brooks', 'wells', 'woods',
+                
+                // --- ing 结尾的名词/原词 ---
                 'peking', 'thing', 'king', 'ring', 'sing', 'wing', 'bring', 'swing', 'spring',
                 'morning', 'evening', 'ceiling', 'nothing', 'anything', 'something', 'during',
                 'pudding', 'wedding', 'building', 'lightning', 'viking',
                 
-                // er 结尾的原词 (非比较级/施动者)
+                // --- er 结尾的原词 ---
                 'shudder', 'matter', 'hammer', 'spider', 'cater', 'finger', 'ginger', 
                 'hunger', 'linger', 'anger', 'bother', 'brother', 'mother', 'father', 
                 'sister', 'master', 'corner', 'dinner', 'supper', 'summer', 'winter',
@@ -1016,60 +1042,79 @@
                 'river', 'silver', 'copper', 'member', 'number', 'offer', 'order'
             ]);
 
+            // 如果在保护名单里，直接结束，不进行任何还原
             if (protectedWords.has(w)) return;
+
+            // 2. 第一轮 NLP 还原 (Compromise.js)
+            const doc = nlp(w);
+            doc.verbs().toInfinitive();
+            doc.nouns().toSingular();
+            let lemma = doc.text().trim().toLowerCase();
+            if (lemma && lemma !== w) candidates.push(lemma);
+
+            // --- 临时容器，用于存放手动拆解出来的词，以便进行二轮 NLP 检查 ---
+            const manualGenerated = [];
+            const pushManual = (val) => {
+                candidates.push(val);
+                manualGenerated.push(val);
+            };
 
             // 3. 手动后缀剥离 (backup logic)
             const addVariants = (base) => {
                 if (base.length <= 2) return;
-                // 安全检查：词根必须包含元音 (避免 sky -> sk 这种误判)
+                // 安全检查：词根必须包含元音
                 if (!/[aeiouy]/.test(base)) return;
 
-                candidates.push(base);
-                candidates.push(base + 'e'); // clos -> close
+                pushManual(base);
+                pushManual(base + 'e'); // clos -> close
                 
-                // 处理双写辅音还原 (bigg -> big, winn -> win)
-                // 注意：shudder -> shudd -> shud 的问题已被上面的 protectedWords 拦截
+                // 处理双写辅音还原 (bigg -> big)
                 if (base.length > 2) { 
                     const last = base.slice(-1);
                     const secondLast = base.slice(-2, -1);
                     if (last === secondLast && /^[a-z]$/.test(last)) {
-                        candidates.push(base.slice(0, -1));
+                        pushManual(base.slice(0, -1));
                     }
                 }
-                if (base.endsWith('i')) candidates.push(base.slice(0, -1) + 'y'); // happi -> happy
+                if (base.endsWith('i')) pushManual(base.slice(0, -1) + 'y'); // happi -> happy
             };
 
             // 提高长度阈值，避免误伤短词
             if (w.endsWith('est') && w.length > 5) addVariants(w.slice(0, -3));
             
-            // er 处理：长度需 > 4 (避免 user -> us)
+            // er 处理
             if (w.endsWith('er') && w.length > 4) addVariants(w.slice(0, -2));
             
-            // --- 针对 -ly 的修复 (fully -> full) ---
+            // -ly 处理
             if (w.endsWith('ly') && w.length > 3) {
                 const base = w.slice(0, -2);
-                candidates.push(base);
-                
-                if (base === 'ful' || base === 'dul' || base === 'shril') {
-                    candidates.push(base + 'l');
-                }
-                if (base === 'whol') candidates.push('whole');
-                if (base === 'tru') candidates.push('true');
-                if(base.endsWith('i')) candidates.push(base.slice(0,-1)+'y');
+                pushManual(base);
+                if (base === 'ful' || base === 'dul' || base === 'shril') pushManual(base + 'l');
+                if (base === 'whol') pushManual('whole');
+                if (base === 'tru') pushManual('true');
+                if(base.endsWith('i')) pushManual(base.slice(0,-1)+'y');
                 if (base.length > 2 && !['a','e','i','o','u','y'].includes(base.slice(-1))) {
-                    candidates.push(base + 'le');
+                    pushManual(base + 'le');
                 }
             }
 
             if (w.endsWith('ed') && w.length > 4) addVariants(w.slice(0, -2));
             
-            // ing 处理：长度需 > 4，且剥离后剩余部分需包含元音
+            // ing 处理
             if (w.endsWith('ing') && w.length > 4) {
                 const base = w.slice(0, -3);
-                if (/[aeiouy]/.test(base)) {
-                    addVariants(base);
-                }
+                if (/[aeiouy]/.test(base)) addVariants(base);
             }
+
+            // 4. 第二轮 NLP 兜底 (检查手动拆解的结果)
+            manualGenerated.forEach(subWord => {
+                if(subWord.length < 3) return;
+                const subDoc = nlp(subWord);
+                const subVerb = subDoc.verbs().toInfinitive().text().trim().toLowerCase();
+                if (subVerb && subVerb !== subWord && subVerb.length > 2) candidates.push(subVerb);
+                const subNoun = subDoc.nouns().toSingular().text().trim().toLowerCase();
+                if (subNoun && subNoun !== subWord && subNoun.length > 2) candidates.push(subNoun);
+            });
         }
 
         function isWordKnown(rawWord) {
