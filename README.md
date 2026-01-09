@@ -135,7 +135,7 @@
 # <img src="./icons/shield-check.svg" height="30"> 隐私与安全
 
 >[!IMPORTANT]
-> 除 `学习窗口` 需联网调用 `API` 外，其余功能均在本地离线运行，数据不会上传至任何服务器。
+> 除 `学习窗口` 需联网调用 `API` 外，其余功能均在**本地离线运行**，数据不会上传至任何服务器。
 
 # <img src="./icons/layers.svg" height="30"> 使用资源
 
