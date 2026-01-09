@@ -11,7 +11,7 @@
 
 面向中国英语学习者的超纲词标注工具
 <br>
-<sub>Powered by <code><img src="./icons/gemini.svg" height="12" align="center"> Gemini</code></sub>
+<sub>Made with <code><img src="./icons/gemini.svg" height="12" align="center"> Gemini</code></sub>
 
 [![下载](https://img.shields.io/badge/下载-离线网页-0e7ff1?style=flat-square&logo=googlechrome&logoColor=white)](https://github.com/Poyinte/Lexun/releases/download/v1.0.0/Lexun.html) [![访问](https://img.shields.io/badge/访问-线上网页-084c91?style=flat-square&logo=github)](https://poyinte.github.io/Lexun/)
 </div>
